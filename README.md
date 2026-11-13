@@ -34,3 +34,11 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 
 - [Account-loss, Backup & Recovery Runbook](docs/ACCOUNT_LOSS_BACKUP_RECOVERY.md) — includes the current workflow inventory and owner actions required to secure actual n8n backups. **Documentation is not a substitute for a private workflow export.**
 - [External Reachability Check](.github/workflows/external-reachability.yml) — GitHub Actions job scheduled every 30 minutes outside n8n. Checks basic public service reachability; **scheduled runs and email notifications still need owner verification**.
+
+## Internal AI Flight Research workspace (November 13, 2026)
+
+- The existing signed-in Command Centre now has an **AI Flight Research** navigation tab with a staff-only demonstration form and three fictional flight comparison cards. Form fields include IATA airports, travel dates, passenger counts, cabin and search preference.
+- The interface uses **local fictitious sample data only** and performs no live GDS search, customer contact, payments, bookings or ticket issuance. It must not be used to quote customers.
+- Actual flights, prices, baggage and fare rules remain **unverified** until the authorized Amadeus or Travelport provider API is connected and tested.
+- **Current phase:** guided staff UI demo; **next phase:** secure backend search contract, real provider integration, price verification, supplier-cost isolation, and operator approval.
+- [Revised scope: internal AI Flight Researcher](docs/AI_FLIGHT_RESEARCHER_REVISED_SCOPE_2026-11-13.md).
