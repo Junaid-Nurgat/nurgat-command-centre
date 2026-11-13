@@ -79,3 +79,9 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Changing itinerary, travel dates, passengers, sample markup, or signing out invalidates the demo draft. **This is not a real customer quote or a customer sending service.**
 - The interface lists the exact remaining release gates: licensed GDS, verified fare/rules/expiry, owner-approved markup, staff approval, approved delivery channel and auditable status tracking.
 - [Customer quote workflow and production handoff contract](docs/CUSTOMER_QUOTATION_HANDOFF_2026-11-13.md).
+
+## Command Centre Lite — separate phone-first version
+- **[Launch Lite](https://junaid-nurgat.github.io/nurgat-command-centre/lite.html)** — a simple mobile-first interface with Search, Flights, Quote, and AI tools.
+- **[Launch original](https://junaid-nurgat.github.io/nurgat-command-centre/)** — the existing dashboard remains unchanged. Lite is maintained in `lite.html`, separate from `index.html`.
+- Same authorized reviewer login and existing secure demo APIs. All prices are fictional, AI cannot view confidential supplier pricing, and customer delivery is disabled.
+- [Lite design, safeguards and mobile test checklist](docs/COMMAND_CENTRE_LITE_2026-11-13.md).
