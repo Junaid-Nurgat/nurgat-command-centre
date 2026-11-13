@@ -72,3 +72,7 @@ The agency n8n project now has a `gmailOAuth2` credential (Gmail account). Only 
 - **Usage & billing**: n8n monthly execution quota, remaining AI Gateway credits and API budget are not accessible through connected tools. The existing usage budget gates are *offline logic*, not enforced against production billing.
 - **Production hosting & compliance**: CEO dashboard public GitHub Pages demo isn't approved as the live commercial operations host; perform hosted login/access audits and move to a compliant environment before real customer data.
 - **Operational hardening**: validate admin escalation, mail bounce/delivery monitoring, external uptime monitoring and permission reviews before production.
+
+## Latest independent pre-API audit
+
+[Pre-API System Audit — 2026-11-13](PRE_API_SYSTEM_AUDIT_2026-11-13.md) summarizes verified offline tests, email monitoring fixes, security findings, and remaining authorization gates. It does not certify production readiness.
