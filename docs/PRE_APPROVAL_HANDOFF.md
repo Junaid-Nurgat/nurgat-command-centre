@@ -38,3 +38,14 @@ The internal CEO Command Centre and demo automation suite can be inspected befor
 - Existing demo customer data and client approval flows remain blocked from real communication.
 - Saved snapshots are not email alerts. n8n/Gateway balances are **not** available from these workflows.
 - The shared normalizer currently accepts only test fixtures. Do not mistake the synthetic Travelport-shaped payloads for a provider-certified live parser.
+
+## Post-approval work — November 13, 2026
+
+The agency owner has reportedly approved continuing with internal reliability preparation, but the necessary third-party account access is not present in the connected n8n project.
+
+- **Prepared:** `Nurgat Tours — CEO Failure Alerts (AWAITING EMAIL AUTH)`, workflow `qJgu6yWM9hH3yLWi`. It reads pending private error records and creates a sanitized incident email. The Gmail send node is deliberately **disabled** and the workflow is **inactive**. Test executions **75** (no incident) and **76** (synthetic incident) succeeded; **no email was sent**.
+- **Business Gmail OAuth needed:** n8n currently lists a `Google Sheets account` credential only. This is **not** a Gmail send credential. A separate authorized agency Gmail OAuth connection must be completed by the agency administrator in n8n. The connected ChatGPT Gmail account is a different personal account and was not used to send business alerts.
+- **Billing/quota still blocked:** no tool-connected actual n8n account execution limits or remaining AI Gateway credits are available. The offline threshold gate is tested, but not wired to real balances; it must not be described as active credit protection.
+- **GDS still blocked:** no Amadeus Self-Service or Travelport credentials are available or verified.
+
+After agency Gmail OAuth is connected, verify sender/recipient, perform one approved non-customer test message, add deduplication and delivery audit, and only then enable scheduled or immediate email delivery. Do not simply activate the current disabled node.
