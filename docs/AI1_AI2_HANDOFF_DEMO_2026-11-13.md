@@ -18,6 +18,13 @@ Status: **Created in n8n, UNPUBLISHED for safety and E2E testing.** Date: 2026-1
 - No real WhatsApp inbound webhook, customer reply, supplier fare, pricing, confirmed availability, booking, or quotation.
 - **The workflow is intentionally UNPUBLISHED**, so no production endpoint is live yet.
 
+## Actual simulated n8n workflow execution tests
+- n8n workflow test execution **99**: **SUCCESS** for a valid LUN → DXB one-way request. External AI2 HTTP call pinned/simulated; internal validator and final response gate executed normally.
+- n8n workflow test execution **100**: **EXPECTED FAILURE** for request with `customerPhone` field.
+- n8n workflow test execution **101**: **EXPECTED FAILURE** for missing reviewer JWT.
+- n8n workflow test execution **102**: **EXPECTED FAILURE** for AI2 response claiming `customerSendAllowed:true`.
+- The three failure executions returned an error with details hidden by redaction; the negative scenarios were rejected, but these are **simulation tests, not live Supabase membership or live AI2 calls**.
+
 ## Isolated code checks completed
 - Valid structured route passed.
 - PII field rejected.
