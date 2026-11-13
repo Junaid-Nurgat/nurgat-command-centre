@@ -29,3 +29,8 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 ## Latest independent pre-API audit
 
 [Pre-API System Audit — 2026-11-13](docs/PRE_API_SYSTEM_AUDIT_2026-11-13.md) summarizes verified offline tests, email monitoring fixes, security findings, and remaining authorization gates. It does not certify production readiness.
+
+## Backup, Recovery and External Monitoring
+
+- [Account-loss, Backup & Recovery Runbook](docs/ACCOUNT_LOSS_BACKUP_RECOVERY.md) — includes the current workflow inventory and owner actions required to secure actual n8n backups. **Documentation is not a substitute for a private workflow export.**
+- [External Reachability Check](.github/workflows/external-reachability.yml) — GitHub Actions job scheduled every 30 minutes outside n8n. Checks basic public service reachability; **scheduled runs and email notifications still need owner verification**.
