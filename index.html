@@ -71,7 +71,7 @@
     <label class="field frwide">Staff reference (optional)<input id="frReference" maxlength="40" placeholder="e.g. ENQ-1042 — no customer personal data"></label>
    </div>
    <p class="footnote" id="frCodeHelp">Enter verified 3-letter IATA airport codes. This offline demo does not resolve city names or check real routes.</p>
-   <div class="toolbar" style="margin-top:18px"><button type="submit" class="btn" id="frRun">✦ Research flights (demo)</button><button type="button" class="btn ghost" id="frReset">Reset</button><span class="muted" style="font-size:12px">No API calls · no customer messages · no reservations</span></div>
+   <div class="toolbar" style="margin-top:18px"><button type="submit" class="btn" id="frRun">✦ Research flights (demo)</button><button type="button" class="btn ghost" id="frReset">Reset</button><label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)"><input type="checkbox" id="frUseBackend" checked> Use secure demo backend</label><span class="muted" style="font-size:12px">No live GDS · no customer messages · no bookings</span></div>
    <p id="frStatus" class="message" role="status" aria-live="polite"></p>
   </form>
  </div>
@@ -236,7 +236,13 @@ function makeApiClient(url,key){
   if(x.error&&/jwt|expired/i.test(x.error.message)&&await refreshed())x=await request('/functions/v1/nurgat-ceo-ai-process',{method:'POST',body:{requestId}});
   return x;
  }
- return {auth,rpc,from,invokeAi};
+ async function flightDemo(payload){
+  if(!tokens?.access_token)return {data:null,error:{message:'Staff login required'}};
+  let x=await request('/functions/v1/nurgat-flight-research-demo',{method:'POST',body:payload});
+  if(x.error&&/jwt|expired/i.test(x.error.message)&&await refreshed())x=await request('/functions/v1/nurgat-flight-research-demo',{method:'POST',body:payload});
+  return x;
+ }
+ return {auth,rpc,from,invokeAi,flightDemo};
 }
 try {
  client=makeApiClient(URL,PUBLIC_KEY);
@@ -359,7 +365,7 @@ $('frCompareTable').addEventListener('click',e=>{
  if(b)frSelectFlight(b.dataset.frTableSelect);
 });
 
-$('flightResearchForm').addEventListener('submit',ev=>{
+$('flightResearchForm').addEventListener('submit',async ev=>{
  ev.preventDefault();
  if(!state.user){frError('Sign in using the authorized reviewer account first.');return}
  const origin=$('frOrigin').value.trim().toUpperCase(),destination=$('frDestination').value.trim().toUpperCase();
@@ -372,7 +378,27 @@ $('flightResearchForm').addEventListener('submit',ev=>{
  if(trip==='ROUND_TRIP'&&(!ret||ret<=departure)){frError('Return date must be later than departure.');return}
  if(!Number.isInteger(adults)||adults<1||adults>9||!Number.isInteger(children)||children<0||children>8||!Number.isInteger(infants)||infants<0||infants>adults||adults+children>9){frError('Check passenger counts: 1–9 adults, 0–8 children, infants no more than adults, at most 9 seated passengers.');return}
  const preference=$('frPreference').value;
+ const useBackend=$('frUseBackend').checked;
  let offers=FR_FIXTURES.map(f=>({...f}));
+ if(useBackend){
+  $('frRun').disabled=true;
+  $('frStatus').className='message';$('frStatus').textContent='Checking staff authorization and retrieving fictional demo results securely…';
+  try {
+   const {data,error}=await client.flightDemo({
+    origin,destination,departureDate:departure,returnDate:trip==='ROUND_TRIP'?ret:null,
+    tripType:trip,adults,children,infants,cabin:$('frCabin').value,preference
+   });
+   if(error)throw Error(error.message||'Flight research demo backend unavailable');
+   if(data?.ok!==true||data?.mode!=='FICTIONAL_DEMO_ONLY'||data?.providerConnected!==false||data?.fareVerified!==false||data?.customerSendAllowed!==false||data?.bookingAvailable!==false||data?.ticketIssuanceAllowed!==false||!Array.isArray(data.offers)||data.offers.length!==3)throw Error('Response did not satisfy fictional demo safety contract.');
+   const ids=new Set();
+   offers=data.offers.map(f=>{
+    if(!f||!/^DEMO-[A-C]$/.test(f.id)||ids.has(f.id)||typeof f.airline!=='string'||!/^Sample Air [A-C]$/.test(f.airline)||f.currency!=='USD'||!Number.isSafeInteger(f.illustrativeTotal)||f.illustrativeTotal<0||!Number.isSafeInteger(f.durationMinutes)||f.durationMinutes<=0||!Number.isSafeInteger(f.stops)||f.stops<0||f.stops>4)throw Error('Invalid demonstration flight data.');
+    ids.add(f.id);
+    return {airline:f.airline,flight:f.id,duration:f.durationMinutes,stops:f.stops,price:f.illustrativeTotal,baggage:'Not verified',note:'Verified as fictional test data'};
+   });
+  }catch(e){frError('Secure demo search failed: '+(e?.message||'Unknown error')+'. No real flight search occurred. You may uncheck secure backend to use local samples.');return}
+  finally{$('frRun').disabled=false;}
+ }
  if(preference==='CHEAPEST')offers.sort((a,b)=>a.price-b.price);
  else if(preference==='FASTEST')offers.sort((a,b)=>a.duration-b.duration);
  else if(preference==='FEWEST_STOPS')offers.sort((a,b)=>a.stops-b.stops||a.price-b.price);
@@ -385,7 +411,7 @@ $('flightResearchForm').addEventListener('submit',ev=>{
  frCompare(offers);
  $('frAnswer').textContent='Demo results loaded for '+route+'. Ask for cheapest, fastest, or fewest stops.';
  $('frResultsPanel').classList.remove('hidden');
- $('frStatus').className='message';$('frStatus').textContent='3 fictional comparison options generated locally. No GDS search was performed.';
+ $('frStatus').className='message';$('frStatus').textContent=useBackend?'3 fictional comparison options returned by the authenticated demo backend. No GDS search was performed.':'3 fictional comparison options generated locally. No GDS search was performed.';
  $('frResultsPanel').scrollIntoView({behavior:'smooth',block:'start'});
 });
 
