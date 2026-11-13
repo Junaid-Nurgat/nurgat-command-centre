@@ -21,6 +21,22 @@
 .frtips{padding:15px;background:#f1f8f7;border-radius:11px;font-size:12px;line-height:1.7;color:#3a6465}
 @media(max-width:1190px){.frgrid{grid-template-columns:repeat(2,1fr)}.frresults{grid-template-columns:1fr 1fr}}
 @media(max-width:670px){.frgrid{grid-template-columns:1fr}.frwide{grid-column:span 1}.frresults,.frhelp{grid-template-columns:1fr}}
+
+/* Interactive offline comparison — selection and private staff review */
+.froffer{transition:border-color .15s,box-shadow .15s}
+.froffer.selected{border:2px solid #0c6968;box-shadow:0 0 0 3px #e1f3ef;padding:18px}
+.frselection{background:#eff8f6;border:1px solid #c4e3dc;border-radius:15px;padding:20px;margin-top:17px}
+.frselection h3{font:800 17px Manrope,sans-serif;letter-spacing:-.035em;margin:6px 0 9px}
+.frdetailgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.frdetailgrid .detail{background:white;border:1px solid #d9ebe7;border-radius:10px;padding:13px;min-width:0}
+.frdetailgrid .detail small{display:block;color:#647e84;font-weight:700;font-size:10px;margin-bottom:5px}
+.frdetailgrid .detail strong{display:block;overflow-wrap:anywhere}
+.frofferclick{width:100%;margin-top:15px}
+.frcomprow{display:grid;grid-template-columns:1.3fr 1fr .8fr .8fr .8fr;gap:10px;align-items:center;padding:12px;border-bottom:1px solid #e6eeee;font-size:12px}
+.frcomprow:last-child{border-bottom:none}
+.frcomprow small{color:#73878f}
+.frhint{color:#667e84;font-size:12px;line-height:1.6}
+@media(max-width:670px){.frdetailgrid{grid-template-columns:1fr 1fr}.frcomprow{grid-template-columns:1fr 1fr;gap:5px}.frcomprow span:nth-child(3){display:none}}
 </style></head><body><div class="shell"><aside class="sidebar"><div class="brand"><span class="brandmark">N</span><div><strong>Nurgat Tours</strong><small>CEO Command Centre</small></div></div><div class="navmeta">Workspace</div><nav class="sidenav" aria-label="Command centre navigation"><button class="navbtn active" data-view="overview" type="button">◫ &nbsp; Overview</button><button class="navbtn" data-view="flight-research" type="button">✈ &nbsp; AI Flight Research</button><button class="navbtn" data-view="pending" type="button">◷ &nbsp; Awaiting approval <span class="num" id="navPending">0</span></button><button class="navbtn" data-view="drafts" type="button">▤ &nbsp; To be submitted <span class="num" id="navDrafts">0</span></button><button class="navbtn" data-view="requests" type="button">✦ &nbsp; AI special requests <span class="num" id="navRequests">0</span></button><button class="navbtn" data-view="history" type="button">▣ &nbsp; Decision history</button><button class="navbtn" data-view="settings" type="button">⚙ &nbsp; System status</button></nav><div class="sidebarbottom"><div class="mode">● SAFE TEST ENVIRONMENT</div><p>Fictional flights only. No customer messages, live pricing changes, booking or ticketing.</p></div></aside><main class="main"><div class="topline"><div><div class="eyebrow">Executive workspace · Nurgat Travel & Tours</div><h1 class="pageheading" id="pageTitle">Command overview</h1><p class="subtitle" id="pageSubtitle">An organized view of quotations, decisions and requests.</p></div><div class="righttop"><span class="chip warn">TEST MODE</span><span class="chip" id="connection"><span class="dot"></span> Connecting…</span><button class="btn ghost small hidden" id="refreshBtn">↻ Refresh</button><button class="btn ghost small hidden" id="signOutBtn">Sign out</button></div></div><div class="banner"><strong>Demo environment.</strong> All flight offers are fictional. Demo decisions and CEO requests are saved to Supabase. CEO AI suggestions can be requested securely from n8n; nothing is sent to customers.</div>
 <section id="loginView" class="panel auth"><h2>Secure sign in</h2><p class="subtitle">Sign in using the authorized reviewer account. Other accounts cannot view quotation data.</p><form id="loginForm"><label class="field">Email<input id="email" type="email" required autocomplete="email" placeholder="name@company.com"></label><label class="field">Password<input id="password" type="password" required autocomplete="current-password" placeholder="Your password"></label><button class="btn full" type="submit" id="loginBtn">Sign in to command centre</button></form><p id="loginError" role="status" aria-live="polite" class="message"></p><div class="footnote">Do not share your login details. New accounts must be separately authorized by the agency administrator.</div></section>
 <div id="appViews" class="hidden">
@@ -48,7 +64,10 @@
    <p id="frStatus" class="message" role="status" aria-live="polite"></p>
   </form>
  </div>
- <div class="panel hidden" id="frResultsPanel"><div class="panelhead"><div><h2 id="frResultsTitle">Sample flight options</h2><p id="frResultsSubtitle">Fictional local results for interface testing only.</p></div><span class="chip warn">NOT REAL FLIGHTS</span></div><div class="fralert"><strong>Demonstration only.</strong> Every airline label, itinerary, price, duration and baggage example below is fictional. These are not verified offers and cannot be approved, exported, booked or sent to customers.</div><div id="frResults" class="frresults"></div><p class="footnote">These amounts are invented customer-facing demonstration totals. No supplier costs, markups or provider API responses appear in this workspace.</p></div>
+ <div class="panel hidden" id="frResultsPanel"><div class="panelhead"><div><h2 id="frResultsTitle">Sample flight options</h2><p id="frResultsSubtitle">Fictional local results for interface testing only.</p></div><span class="chip warn">NOT REAL FLIGHTS</span></div><div class="fralert"><strong>Demonstration only.</strong> Every airline label, itinerary, price, duration and baggage example below is fictional. These are not verified offers and cannot be approved, exported, booked or sent to customers.</div><div id="frResults" class="frresults"></div>
+ <section id="frSelectedPanel" class="frselection hidden" aria-live="polite"><div class="split"><div><div class="eyebrow">Selected for internal review · demo only</div><h3 id="frSelectedTitle">Selected option</h3></div><button type="button" class="btn ghost small" id="frClearSelection">Clear selection</button></div><div id="frSelectedDetails" class="frdetailgrid"></div><p class="frhint" id="frSelectedNote"></p><div class="toolbar"><button type="button" class="btn ghost" id="frChangePreference">Change sorting</button><span class="muted" style="font-size:11px">You can compare freely, but approvals and bookings are disabled.</span></div></section>
+ <section style="margin-top:22px" aria-label="Quick comparison"><div class="panelhead" style="margin-bottom:8px"><div><h2 style="font-size:16px">Quick comparison</h2><p>Compare options without selecting a booking.</p></div></div><div id="frCompareTable" class="tablewrap"></div></section>
+ <p class="footnote">These amounts are invented customer-facing demonstration totals. No supplier costs, markups or provider API responses appear in this workspace. Selection is temporary and isn't saved to Supabase.</p></div>
  <div class="panel"><div class="panelhead"><div><h2>AI assistance — planned</h2><p>Optional questions about verified search results, without replacing the simple form.</p></div><span class="chip warn">NOT CONNECTED</span></div><div class="frhelp"><div class="frtips"><strong>“Find me a cheaper option.”</strong><div>Later, AI can request a validated new GDS search and explain confirmed alternatives.</div></div><div class="frtips"><strong>“Which flight has better baggage?”</strong><div>Later, AI can compare verified fare-specific conditions. It must never guess baggage allowances.</div></div></div></div>
 </section>
 <section id="pending" class="view"><div class="panel"><div class="panelhead"><div><h2>Awaiting approval</h2><p>Pending quotations only. Approved and rejected decisions automatically move to history.</p></div></div><div class="toolbar"><input class="search" id="pendingSearch" type="search" placeholder="Search reference or route" aria-label="Search pending quotations"></div><div class="tablewrap" id="pendingTable"></div></div></section>
@@ -219,9 +238,63 @@ $('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;
 function frTripChanged(){const one=document.querySelector('input[name="frTrip"]:checked').value==='ONE_WAY';$('frReturn').disabled=one;$('frReturn').required=!one}
 document.querySelectorAll('input[name="frTrip"]').forEach(e=>e.addEventListener('change',frTripChanged));
 $('frDeparture').addEventListener('change',()=>{$('frReturn').min=$('frDeparture').value;if($('frReturn').value<=$('frDeparture').value)$('frReturn').value=''});
-$('frReset').addEventListener('click',()=>{ $('flightResearchForm').reset();$('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;frTripChanged();$('frStatus').textContent='';$('frResultsPanel').classList.add('hidden')});
-function frError(message){$('frStatus').className='message error';$('frStatus').textContent=message;$('frResultsPanel').classList.add('hidden')}
+$('frReset').addEventListener('click',()=>{ $('flightResearchForm').reset();$('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;frTripChanged();$('frStatus').textContent='';$('frResultsPanel').classList.add('hidden');frCurrentOffers=[];frClearSelection()});
+function frError(message){$('frStatus').className='message error';$('frStatus').textContent=message;$('frResultsPanel').classList.add('hidden');frCurrentOffers=[];frClearSelection()}
 function frDuration(min){return Math.floor(min/60)+'h '+String(min%60).padStart(2,'0')+'m'}
+
+let frCurrentOffers=[];
+let frCurrentRoute='';
+let frSelectedFlight=null;
+function frClearSelection(){
+ frSelectedFlight=null;
+ $('frSelectedPanel').classList.add('hidden');
+ document.querySelectorAll('[data-fr-select]').forEach(b=>{
+   b.textContent='Select for review';
+   b.setAttribute('aria-pressed','false');
+   b.closest('.froffer')?.classList.remove('selected');
+ });
+}
+function frSelectFlight(flightId){
+ if(!state.user)return;
+ const chosen=frCurrentOffers.find(f=>f.flight===flightId);
+ if(!chosen)return;
+ frSelectedFlight=chosen.flight;
+ $('frSelectedTitle').textContent=chosen.airline+' · '+chosen.flight;
+ const details=[
+  ['Route',frCurrentRoute],['Illustrative total','USD '+chosen.price.toLocaleString('en-US')],['Journey duration',frDuration(chosen.duration)],
+  ['Stops',String(chosen.stops)],['Baggage','Unverified'],['Fare rules','Unavailable'],
+  ['Actual availability','Not checked'],['Customer sending','Disabled'],['Ticket issuance','Disabled']
+ ];
+ $('frSelectedDetails').innerHTML=details.map(([k,v])=>'<div class="detail"><small>'+esc(k)+'</small><strong>'+esc(v)+'</strong></div>').join('');
+ $('frSelectedNote').textContent='This is a fictional '+chosen.note.toLowerCase()+'. Selecting it only opens the staff review panel. It does not create, reserve, approve or send a real quotation.';
+ $('frSelectedPanel').classList.remove('hidden');
+ document.querySelectorAll('[data-fr-select]').forEach(b=>{
+  const yes=b.dataset.frSelect===flightId;
+  b.textContent=yes?'✓ Selected for review':'Select for review';
+  b.setAttribute('aria-pressed',String(yes));
+  b.closest('.froffer')?.classList.toggle('selected',yes);
+ });
+ $('frSelectedPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('frResults').addEventListener('click',e=>{
+ const button=e.target.closest('[data-fr-select]');
+ if(button)frSelectFlight(button.dataset.frSelect);
+});
+$('frClearSelection').addEventListener('click',frClearSelection);
+$('frChangePreference').addEventListener('click',()=>{
+ $('frPreference').focus();
+ $('flightResearchForm').scrollIntoView({behavior:'smooth',block:'start'});
+});
+function frCompare(offers){
+ const headings='<thead><tr><th>Flight</th><th>Sample total</th><th>Duration</th><th>Stops</th><th>Action</th></tr></thead>';
+ const rows=offers.map(f=>'<tr><td><strong>'+esc(f.airline)+'</strong><div class="muted">'+esc(f.flight)+'</div></td><td class="price">USD '+f.price.toLocaleString('en-US')+'</td><td>'+frDuration(f.duration)+'</td><td>'+f.stops+'</td><td><button type="button" class="btn ghost small" data-fr-table-select="'+esc(f.flight)+'">View</button></td></tr>').join('');
+ $('frCompareTable').innerHTML='<table>'+headings+'<tbody>'+rows+'</tbody></table>';
+}
+$('frCompareTable').addEventListener('click',e=>{
+ const b=e.target.closest('[data-fr-table-select]');
+ if(b)frSelectFlight(b.dataset.frTableSelect);
+});
+
 $('flightResearchForm').addEventListener('submit',ev=>{
  ev.preventDefault();
  if(!state.user){frError('Sign in using the authorized reviewer account first.');return}
@@ -241,9 +314,11 @@ $('flightResearchForm').addEventListener('submit',ev=>{
  else if(preference==='FEWEST_STOPS')offers.sort((a,b)=>a.stops-b.stops||a.price-b.price);
  else offers.sort((a,b)=>(a.price/1000+a.duration/1000+a.stops*.27)-(b.price/1000+b.duration/1000+b.stops*.27));
  const route=origin+' → '+destination;
+ frCurrentOffers=offers;frCurrentRoute=route;frClearSelection();
  $('frResultsTitle').textContent='Fictional comparisons · '+route;
  $('frResultsSubtitle').textContent=departure+(trip==='ROUND_TRIP'?' to '+ret:' · one way')+' · '+adults+' adult(s) · '+children+' child(ren) · '+infants+' infant(s) · '+$('frCabin').selectedOptions[0].text;
- $('frResults').innerHTML=offers.map((f,i)=>'<article class="froffer'+(i===0?' featured':'')+'"><div class="frflag">'+(i===0?'★ FIRST BY YOUR PREFERENCE':'FICTIONAL OPTION '+(i+1))+'</div><h3 style="font:800 16px Manrope,sans-serif;margin:12px 0 4px">'+esc(f.airline)+'</h3><span class="muted">'+esc(f.flight)+'</span><div class="frprice">USD '+f.price.toLocaleString('en-US')+'</div><span class="muted" style="font-size:11px">Illustrative final total — NOT a real quote</span><div class="frline"><span>Route</span><strong>'+esc(route)+'</strong></div><div class="frline"><span>Duration</span><strong>'+frDuration(f.duration)+'</strong></div><div class="frline"><span>Stops</span><strong>'+f.stops+'</strong></div><div class="frline"><span>Baggage</span><strong>Not verified</strong></div><div class="frline"><span>Fare rules</span><strong>Not available</strong></div><p class="footnote">No selection, sending, payment, booking or ticketing available.</p></article>').join('');
+ $('frResults').innerHTML=offers.map((f,i)=>'<article class="froffer'+(i===0?' featured':'')+'"><div class="frflag">'+(i===0?'★ FIRST BY YOUR PREFERENCE':'FICTIONAL OPTION '+(i+1))+'</div><h3 style="font:800 16px Manrope,sans-serif;margin:12px 0 4px">'+esc(f.airline)+'</h3><span class="muted">'+esc(f.flight)+'</span><div class="frprice">USD '+f.price.toLocaleString('en-US')+'</div><span class="muted" style="font-size:11px">Illustrative final total — NOT a real quote</span><div class="frline"><span>Route</span><strong>'+esc(route)+'</strong></div><div class="frline"><span>Duration</span><strong>'+frDuration(f.duration)+'</strong></div><div class="frline"><span>Stops</span><strong>'+f.stops+'</strong></div><div class="frline"><span>Baggage</span><strong>Not verified</strong></div><div class="frline"><span>Fare rules</span><strong>Not available</strong></div><button class="btn ghost frofferclick" type="button" data-fr-select="'+esc(f.flight)+'" aria-pressed="false">Select for review</button><p class="footnote">Staff preview only — sending, booking and ticketing disabled.</p></article>').join('');
+ frCompare(offers);
  $('frResultsPanel').classList.remove('hidden');
  $('frStatus').className='message';$('frStatus').textContent='3 fictional comparison options generated locally. No GDS search was performed.';
  $('frResultsPanel').scrollIntoView({behavior:'smooth',block:'start'});
