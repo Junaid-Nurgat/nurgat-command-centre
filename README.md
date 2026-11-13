@@ -60,3 +60,10 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Markup and starting fare figures are **fictional training figures**. They are not saved, sent to a customer or eligible for use in live quotes. The limit is a UI demo limit, **not** an authorized business policy.
 - A real markup policy and final-quote allowlist will require owner approval and server-side enforcement after the genuine GDS integration.
 - [Implementation and security details](docs/STAFF_MARKUP_CONTROL_2026-11-13.md).
+
+## Staff flight research AI (v1.4)
+- A real **gpt-5-mini** language-model demo is now wired into the signed-in Command Centre using a separate `Ask Flight AI` form.
+- Supabase `nurgat-staff-flight-ai-demo` v1 (JWT + active reviewer) proxies to n8n `e6JXhYsU20QTPRQd` (separate reviewer check, model and output filter). No GDS provider, ticketing or customer messaging is connected.
+- The AI gets **only fictional durations/stops and selected sample ID**, never supplier/net fare, markup values, personal information, real customer enquiries or live availability. The offline deterministic helper remains available.
+- The AI model may use Gateway credits on each explicit click. Frontend and gateway code tests passed in isolation; **authorized signed-in end-to-end test is still outstanding**.
+- [AI integration contract and test checklist](docs/STAFF_FLIGHT_AI_INTEGRATION_2026-11-13.md).
