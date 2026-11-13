@@ -49,3 +49,26 @@ The agency owner has reportedly approved continuing with internal reliability pr
 - **GDS still blocked:** no Amadeus Self-Service or Travelport credentials are available or verified.
 
 After agency Gmail OAuth is connected, verify sender/recipient, perform one approved non-customer test message, add deduplication and delivery audit, and only then enable scheduled or immediate email delivery. Do not simply activate the current disabled node.
+
+## Gmail alert integration VERIFIED — November 13, 2026
+
+The agency n8n project now has a `gmailOAuth2` credential (Gmail account). Only the credential **reference** is used by n8n workflows; the credential secret is not stored in this repository.
+
+### Active automation
+- **Global Failure Logger** `ZAxm8dI81QMZYT8u` (ACTIVE): persists sanitized failure metadata first, skips events marked `TEST_EVENT`, then emails the Nurgat Tours administrator inbox `nurgattourszm@gmail.com` through authenticated Gmail. After a successful Gmail API response, it saves `notification_state=SENT`, message ID and timestamp to the private internal failure log.
+- **Pending Failure Alert Recovery** `ID2H2sN9gEwuFvKp` (ACTIVE): checks every six hours in `Africa/Lusaka`. It looks only for failure rows still marked `NEEDS_REVIEW` and `notification_state=PENDING`, sends a sanitized digest, and records Gmail receipts. When there are no pending alerts it sends nothing. As with any email+database two-system workflow, a crash after sending and before saving the receipt can yield a duplicate; the digest warns of this.
+- **Daily Reliability Snapshots** `OiuR7XhPWq6GSh0J` stays ACTIVE, with an 08:00 Zambia schedule.
+
+### Verified executions
+- `77`: one-time actual Gmail API send to `nurgattourszm@gmail.com`, succeeded and returned Gmail message ID. Test workflow archived.
+- `78`: synthetic event persisted with `notification_state=SKIPPED_TEST`; no email sent.
+- `79` + `80`: controlled invalid request caused production-mode CEO AI Bridge error, ran the global error logger, sent the administrator alert, and persisted the Gmail message receipt. That log row has been reclassified to `TEST_EVENT` while preserving the sent receipt.
+- `82`: recovery workflow with empty pending queue, completed without email.
+- `83`: recovery branch tested using pinned synthetic input and synthetic Gmail receipt, no external email sent.
+- One-time test workflows and the superseded no-send alert draft were archived.
+
+### Remaining external dependencies
+- **GDS**: provider API credentials and commercial authorization still pending. No live flight data, bookings or customer communications.
+- **Usage & billing**: n8n monthly execution quota, remaining AI Gateway credits and API budget are not accessible through connected tools. The existing usage budget gates are *offline logic*, not enforced against production billing.
+- **Production hosting & compliance**: CEO dashboard public GitHub Pages demo isn't approved as the live commercial operations host; perform hosted login/access audits and move to a compliant environment before real customer data.
+- **Operational hardening**: validate admin escalation, mail bounce/delivery monitoring, external uptime monitoring and permission reviews before production.
