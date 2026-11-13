@@ -17,3 +17,7 @@ Private source repository for the Nurgat Tours internal CEO quotation approval d
 
 ## Changes
 Test sign-in, fictional quote approvals, and CEO AI proposals before publishing any change. GitHub holds the code; a separately configured website host is still required for the permanent dashboard URL.
+
+## Flight provider integration
+
+See [Flight Provider Integration — Architecture & Release Gates](docs/FLIGHT_PROVIDER_INTEGRATION.md) for the Amadeus/Travelport adapter, offline test results, and requirements before any live API use.
