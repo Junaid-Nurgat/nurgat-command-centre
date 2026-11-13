@@ -12,6 +12,8 @@ const required=[
  'id="flight-research"','id="flightResearchForm"','id="frResults"',
  'id="frSelectedPanel"','id="frCompareTable"','id="frAskForm"',
  'id="frUseBackend"','function frSelectFlight','function frAnswerFor',
+ 'id="frMarkupSlider"','id="frMarkupExact"','function frSetMarkup',
+ 'function frRefreshMarkup','function frTotal','data-fr-demo-total',
  "client.flightDemo(", "async function flightDemo(payload)",
  "mode!=='FICTIONAL_DEMO_ONLY'", "fareVerified!==false",
  "customerSendAllowed!==false", "bookingAvailable!==false",
@@ -33,11 +35,16 @@ const context={
  ],
  frSelectedFlight:'DEMO-B',
  frDuration: m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m',
+ frTotal: f=>f.price+0,
+ frMoney: n=>'USD '+Number(n).toLocaleString('en-US'),
  document:{querySelectorAll:()=>[]},
  $:()=>({addEventListener(){},textContent:''}),
 };
 vm.runInNewContext(logic,context);
 assert.match(context.frAnswerFor('cheapest'),/Sample Air B.*USD 735/);
+context.frTotal=f=>f.price+125;
+assert.match(context.frAnswerFor('cheapest'),/Sample Air B.*USD 860/,'Helper reflects simulated markup');
+assert.match(context.frAnswerFor('selected'),/Sample Air B.*USD 860/,'Selected option reflects simulated markup');
 assert.match(context.frAnswerFor('fastest'),/Sample Air C.*10h 45m/);
 assert.match(context.frAnswerFor('fewest'),/Sample Air C.*0/);
 assert.match(context.frAnswerFor('selected'),/Sample Air B/);
