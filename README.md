@@ -85,3 +85,8 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - **[Launch original](https://junaid-nurgat.github.io/nurgat-command-centre/)** — the existing dashboard remains unchanged. Lite is maintained in `lite.html`, separate from `index.html`.
 - Same authorized reviewer login and existing secure demo APIs. All prices are fictional, AI cannot view confidential supplier pricing, and customer delivery is disabled.
 - [Lite design, safeguards and mobile test checklist](docs/COMMAND_CENTRE_LITE_2026-11-13.md).
+
+## AI 1 → AI 2 handoff work
+- New [internal n8n AI-to-AI handoff workflow](https://nurgattourszm.app.n8n.cloud/workflow/Ovchtd30RvioSeL7) created; **unpublished** pending E2E authorization and ingress hardening.
+- Validated structured flight details can flow from AI 1 into the existing read-only AI 2 planner; no WhatsApp, GDS pricing, bookings or customer sending are active.
+- [Architecture, security and activation checklist](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md).
