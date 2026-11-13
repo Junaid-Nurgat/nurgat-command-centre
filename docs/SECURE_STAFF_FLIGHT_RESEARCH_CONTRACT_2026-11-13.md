@@ -80,3 +80,17 @@ Three fixture offers are returned; the above response shows one only to illustra
 - Frontend GitHub code saved and JavaScript passed syntax evaluation.
 - Actual cross-origin signed-in fetch was **not** executed by ChatGPT, so full end-to-end success is not claimed.
 - Supabase security advisor still reports preexisting demo authorization RPC and leaked-password alerts; review before commercial operations.
+
+## Synthetic Edge Function checks — completed
+Evaluated the deployed function source in an isolated JavaScript harness using simulated Auth and reviewer-table responses (not real network calls). **9/9 checks passed**:
+- Authorized, structured demo search returns `FICTIONAL_DEMO_ONLY` with no supplier cost/markup fields.
+- Same-airport route rejected.
+- Past departure date rejected.
+- Extra customer name field rejected.
+- Excess infants rejected.
+- One-way trip with return date rejected.
+- Unsupported cabin rejected.
+- Missing Authorization token rejected.
+- Unapproved browser Origin rejected.
+
+The live gateway JWT enforcement, CORS browser preflight, actual reviewer identity lookup, and actual HTTPS integration remain **unverified until an authorized signed-in browser test**. This harness tests function logic, not the deployed network path.
