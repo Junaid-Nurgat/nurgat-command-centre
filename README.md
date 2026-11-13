@@ -67,3 +67,9 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - The AI gets **only fictional durations/stops and selected sample ID**, never supplier/net fare, markup values, personal information, real customer enquiries or live availability. The offline deterministic helper remains available.
 - The AI model may use Gateway credits on each explicit click. Frontend and gateway code tests passed in isolation; **authorized signed-in end-to-end test is still outstanding**.
 - [AI integration contract and test checklist](docs/STAFF_FLIGHT_AI_INTEGRATION_2026-11-13.md).
+
+## GDS coding AI — API-waiting integration stage (November 13, 2026)
+- Command Centre **Prepare GDS Research Plan** connects via the authorized Supabase `nurgat-gds-planner-demo` Edge Function to published n8n workflow `TuqFlp60RxvorLfv` (gpt-5-mini, strict request validation and restricted output).
+- Generates a **non-executable AI research plan** from structured flight form values. No provider-specific cryptic commands or real GDS interface calls are generated while exact Amadeus/Travelport product and API remain unconfirmed.
+- Real coding/command automation requires the licensed provider's supported API or authorized integration method, verified documentation/permissions and the operator's pricing/booking approval rules. No credentials should be pasted into public GitHub/AI chat.
+- Deployment and isolated checks verified; actual signed-in browser response still needs the authorized account. [Complete handoff and remaining gates](docs/GDS_COMMAND_AUTOMATION_API_WAITING_HANDOFF_2026-11-13.md).
