@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#103c43"><title>Nurgat Tours — Command Centre Lite</title>
+<style>
+:root{--ink:#16313b;--muted:#617b85;--teal:#087567;--deep:#123d43;--bg:#f4f8f7;--card:#fff;--line:#dce9e6;--warn:#a46422;--danger:#b7444e}*{box-sizing:border-box}
+body{margin:0;color:var(--ink);background:var(--bg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #55c8b1;outline-offset:3px}
+header{background:var(--deep);color:white;padding:19px max(18px,env(safe-area-inset-left));position:relative}
+.top{max-width:1040px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;gap:11px;align-items:center;font-weight:800;letter-spacing:-.02em;font-size:17px}.mark{display:grid;place-items:center;width:43px;height:43px;border-radius:13px;background:#c6ebe4;color:var(--deep);font-size:23px}
+.tag{color:#acd4cb;font-size:11px;font-weight:600;letter-spacing:.02em}
+main{max-width:1040px;margin:0 auto;padding:20px 16px 105px}
+a{color:inherit}.switch{border:1px solid #87aca9;color:white;border-radius:9px;padding:8px 11px;font-size:12px;text-decoration:none}
+h1{font-size:clamp(25px,5vw,37px);line-height:1.15;letter-spacing:-.045em;margin:8px 0}h2{font-size:21px;letter-spacing:-.035em;margin:0 0 7px}h3{font-size:16px;margin:0 0 7px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:13px}.muted{color:var(--muted)}.small{font-size:12px}.bold{font-weight:800}
+.card{background:var(--card);border:1px solid var(--line);border-radius:21px;padding:22px;margin:16px 0;box-shadow:0 6px 24px rgba(18,54,58,.035)}
+.demo{border-radius:14px;padding:12px 14px;background:#fff4e7;border:1px solid #f0d7ae;color:#895318;font-size:12px;line-height:1.65}
+.step{background:#eaf6f2;color:#136357;display:inline-block;padding:6px 11px;font-size:11px;font-weight:800;border-radius:99px;letter-spacing:.03em}
+.field{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}.field input,.field select,.field textarea{display:block;width:100%;background:#fff;color:var(--ink);border:1px solid #cfdeda;border-radius:12px;min-height:49px;padding:12px;margin-top:6px}.field input:disabled{background:#eff3f2}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.btn{border:0;border-radius:12px;background:var(--teal);color:white;font-weight:800;min-height:49px;padding:12px 16px}.btn.alt{background:#e9f4f1;color:#145a53}.btn.ghost{background:white;border:1px solid #d2e2de;color:var(--ink)}
+.btn.full{width:100%}.actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}.actions .btn{flex:1;min-width:120px}
+.status{min-height:20px;font-size:12px;color:#23695f;margin-top:13px;white-space:pre-wrap}.status.error{color:var(--danger)}
+.hidden{display:none!important}.bottomnav{display:flex;gap:7px;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #d5e4e1;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));justify-content:center;z-index:5}
+.tab{flex:1;max-width:200px;border:0;background:none;border-radius:11px;padding:10px 4px;color:var(--muted);font-size:11px;font-weight:800;min-height:57px}.tab span{display:block;font-size:19px;line-height:1.1;margin-bottom:5px}.tab.active{background:#e3f4ef;color:#075e53}
+.offer{border:1px solid #d7e5e1;padding:17px;border-radius:17px;margin:12px 0;background:white}.offer.selected{border:2px solid var(--teal);background:#f1faf7}.offer .price{font-size:24px;font-weight:850;letter-spacing:-.045em;margin:8px 0}.line{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eef3f1;font-size:13px}.line:last-child{border:0}.line strong{text-align:right}
+.pill{display:inline-block;background:#e8f4f0;color:#0e6658;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:800}
+.quote{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.75 ui-monospace,monospace;padding:16px;background:#f7faf9;border:1px solid #d9e4e1;border-radius:14px}
+input[type=range]{width:100%;accent-color:var(--teal);min-height:38px}.pricebar{background:#e9f7f2;border-radius:15px;padding:14px;margin:12px 0}
+details{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}summary{cursor:pointer;font-weight:800;font-size:13px}
+@media(max-width:600px){main{padding:17px 13px 104px}.card{padding:18px;border-radius:17px;margin:12px 0}.cols{grid-template-columns:1fr}.actions{display:grid;grid-template-columns:1fr 1fr}.actions .btn{min-width:0}.hidephone{display:none}.top .switch{font-size:11px;padding:8px}.logo{font-size:14px}}
+@media(min-width:700px){.bottomnav{position:sticky;top:0;bottom:auto;border:1px solid var(--line);border-radius:16px;max-width:730px;margin:0 auto 18px;box-shadow:0 7px 15px #143b3910}.tab{font-size:13px;min-height:58px}.tab span{display:inline;margin-right:8px;font-size:18px}}
+</style></head><body>
+<header><div class="top"><div class="logo"><span class="mark">N</span><div>Nurgat Tours <div class="tag">COMMAND CENTRE LITE · TEST VERSION</div></div></div><a class="switch" href="./index.html">Original ↗</a></div></header>
+<main>
+<section id="login" class="card">
+<span class="step">Authorized staff only</span><h1>Welcome back</h1><p class="sub">Sign in with your existing Nurgat Tours reviewer account.</p>
+<form id="loginForm"><label class="field">Email<input type="email" id="email" autocomplete="email" required placeholder="staff@example.com"></label><label class="field">Password<input type="password" id="password" autocomplete="current-password" required></label><button class="btn full" id="loginButton">Sign in</button></form>
+<p id="loginStatus" class="status" role="status"></p><p class="small muted">Lite uses the same authorization system as the original. No public demo access or new user registration.</p>
+</section>
+<div id="workspace" class="hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 15px"><div><div class="tag" style="color:#428174">NURGAT TOURS</div><h1>Flight workspace</h1><p class="sub" style="margin:0">Simple steps. Built for your phone.</p></div><button class="btn ghost" id="logout" style="font-size:12px;min-height:40px">Log out</button></div>
+<div class="demo"><strong>SAFE DEMO:</strong> All airlines and fares below are fictional. There is no live GDS access. No customer messages, real quotes, bookings or ticketing.</div>
+<nav class="bottomnav" aria-label="Lite tasks">
+<button class="tab active" data-tab="search"><span>⌕</span>Search</button>
+<button class="tab" data-tab="results"><span>✈</span>Flights</button>
+<button class="tab" data-tab="quote"><span>▤</span>Quote</button>
+<button class="tab" data-tab="ai"><span>✦</span>AI tools</button>
+</nav>
+<section id="step-search" class="stepview">
+<div class="card"><span class="step">STEP 1 · SEARCH</span><h2 style="margin-top:12px">Where are they flying?</h2><p class="sub">Enter only test travel details, not real customer information.</p>
+<form id="searchForm">
+<div class="cols"><label class="field">From (IATA)<input id="origin" required maxlength="3" pattern="[A-Za-z]{3}" value="LUN"></label><label class="field">To (IATA)<input id="destination" required maxlength="3" pattern="[A-Za-z]{3}" value="DXB"></label></div>
+<label class="field">Trip type<select id="trip"><option value="ROUND_TRIP">Round trip</option><option value="ONE_WAY">One way</option></select></label>
+<div class="cols"><label class="field">Departure<input id="depart" required type="date"></label><label class="field" id="returnField">Return<input id="returnDate" type="date" required></label></div>
+<div class="cols"><label class="field">Adults<input id="adults" type="number" min="1" max="9" value="1" required></label><label class="field">Children<input id="children" type="number" min="0" max="8" value="0" required></label><label class="field">Infants<input id="infants" type="number" min="0" max="9" value="0" required></label><label class="field">Cabin<select id="cabin"><option value="ECONOMY">Economy</option><option value="PREMIUM_ECONOMY">Premium economy</option><option value="BUSINESS">Business</option><option value="FIRST">First</option></select></label></div>
+<label class="field">Priority<select id="preference"><option value="BEST">Best balance</option><option value="CHEAPEST">Lowest sample price</option><option value="FASTEST">Shortest journey</option><option value="FEWEST_STOPS">Fewest stops</option></select></label>
+<button class="btn full" id="searchButton" type="submit">Find sample flights →</button>
+</form><p id="searchStatus" class="status" role="status"></p>
+</div></section>
+<section id="step-results" class="stepview hidden">
+<div class="card"><span class="step">STEP 2 · COMPARE</span><h2 style="margin-top:12px">Choose a sample flight</h2><p class="sub" id="resultsIntro">Search for sample flights first.</p>
+<div id="offers"></div>
+<div id="pricing" class="hidden"><div class="pricebar"><div class="line"><strong>Internal demo markup</strong><strong id="markupLabel">USD 0</strong></div><input id="markupSlider" type="range" min="0" max="500" step="10" value="0" aria-label="Fictional markup"><label class="field">Exact markup (USD)<input id="markupExact" type="number" min="0" max="500" step="1" value="0"></label><p class="small muted">Once per fictional itinerary. Never an approved supplier markup or a real quotation.</p></div><button class="btn full" id="nextQuote">Continue to test quote →</button></div>
+</div></section>
+<section id="step-quote" class="stepview hidden">
+<div class="card"><span class="step">STEP 3 · INTERNAL QUOTE</span><h2 style="margin-top:12px">Prepare a test quotation</h2><div class="demo">Customer delivery is <strong>LOCKED</strong>. Review and copy are for clearly watermarked internal test records only.</div>
+<div id="chosenSummary" class="small muted" style="margin-top:15px">No sample flight selected.</div>
+<div class="actions"><button class="btn" id="makeQuote">Prepare test draft</button><button class="btn alt" id="reviewQuote" disabled>Mark demo reviewed</button><button class="btn ghost" id="copyQuote" disabled>Copy test text</button><button class="btn ghost" id="discardQuote" disabled>Discard</button></div>
+<p id="quoteStatus" class="status" role="status"></p><pre id="quotePreview" class="quote hidden"></pre>
+<details><summary>What's needed before real customer sending?</summary><p class="small muted">Authorized provider API, verified fares and taxes, baggage rules, offer expiry, approved pricing policy, exact-revision staff approval, an approved customer delivery channel and an audit trail.</p></details>
+</div></section>
+<section id="step-ai" class="stepview hidden">
+<div class="card"><span class="step">OPTIONAL · AI</span><h2 style="margin-top:12px">Ask the flight AI</h2><p class="sub">Real AI model, fictional itinerary context only. No confidential pricing, customer details, GDS search or booking.</p>
+<form id="aiForm"><label class="field">Your question<input id="aiQuestion" maxlength="230" minlength="4" required placeholder="Which sample flight has fewer stops?"></label><button class="btn full" id="aiButton">Ask AI</button></form><p id="aiStatus" class="status" role="status"></p><div id="aiAnswer" class="quote hidden"></div></div>
+<div class="card"><h2>GDS research planner</h2><p class="sub">Build a non-executable plan from your flight search details. It cannot search or command a real provider.</p><button class="btn full alt" id="planButton">Prepare GDS plan</button><p id="planStatus" class="status" role="status"></p><div id="planAnswer" class="quote hidden"></div></div>
+</section>
+</div></main>
+<script>
+'use strict';
+const BASE='https://ysakhagnlmhwbbmetjjc.supabase.co';
+const KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
+const $=id=>document.getElementById(id);
+const DAY=86400000;
+let token=null,user=null,offers=[],selected=null,quote=null,markup=0,searchContext=null;
+try{token=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
+const note=(id,msg,error=false)=>{$(id).textContent=msg;$(id).classList.toggle('error',error)};
+function store(value){token=value;try{if(value)sessionStorage.setItem('nurgat-auth-v2',JSON.stringify(value));else sessionStorage.removeItem('nurgat-auth-v2')}catch{}}
+async function request(path,method='GET',body=null,privateCall=true){
+ const headers={apikey:KEY};if(body!==null)headers['content-type']='application/json';
+ if(privateCall&&token?.access_token)headers.authorization='Bearer '+token.access_token;
+ try{
+  const res=await fetch(BASE+path,{method,headers,body:body===null?undefined:JSON.stringify(body),cache:'no-store',mode:'cors'});
+  const data=await res.json().catch(()=>null);
+  return res.ok?{data,error:null}:{data:null,error:{message:data?.message||data?.msg||data?.error_description||data?.error||'Request failed ('+res.status+')',code:res.status}};
+ }catch(e){return {data:null,error:{message:'Network error: '+e.message}}}
+}
+async function refresh(){
+ if(!token?.refresh_token)return false;
+ const r=await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:token.refresh_token},false);
+ if(r.error||!r.data?.access_token){store(null);return false}store(r.data);return true;
+}
+async function call(path,body){if(!token?.access_token)throw Error('Please sign in first.');
+ let x=await request('/functions/v1/'+path,'POST',body);
+ if(x.error&&(x.error.code===401||/jwt|expired|token/i.test(x.error.message))&&await refresh())x=await request('/functions/v1/'+path,'POST',body);
+ if(x.error)throw Error(x.error.message);return x.data;
+}
+async function checkUser(){if(!token?.access_token){setLoggedOut();return}
+ let x=await request('/auth/v1/user');if(x.error&&await refresh())x=await request('/auth/v1/user');
+ if(x.error||!x.data?.id){store(null);setLoggedOut();return}
+ const member=await request('/rest/v1/approval_reviewers?select=user_id&active=eq.true&user_id=eq.'+encodeURIComponent(x.data.id)+'&limit=1');
+ if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
+ user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');
+}
+function setLoggedOut(){user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
+ const email=$('email').value.trim(),password=$('password').value;
+ const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
+ if(x.error||!x.data?.access_token)throw Error(x.error?.message||'Login failed');
+ store(x.data);await checkUser();if(user)note('loginStatus','');
+ }catch(err){note('loginStatus',err.message,true)}finally{$('loginButton').disabled=false}});
+$('logout').addEventListener('click',async()=>{if(token?.access_token)await request('/auth/v1/logout','POST');store(null);setLoggedOut()});
+function tab(name){
+ document.querySelectorAll('.stepview').forEach(e=>e.classList.toggle('hidden',e.id!=='step-'+name));
+ document.querySelectorAll('.tab').forEach(b=>{const selected=b.dataset.tab===name;b.classList.toggle('active',selected);b.setAttribute('aria-current',selected?'page':'false')});
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
+function isoAfter(days){const d=new Date(Date.now()+days*DAY);return d.toISOString().slice(0,10)}
+$('depart').value=isoAfter(35);$('returnDate').value=isoAfter(48);$('depart').min=isoAfter(0);$('returnDate').min=isoAfter(0);
+$('trip').addEventListener('change',()=>{const one=$('trip').value==='ONE_WAY';$('returnField').classList.toggle('hidden',one);$('returnDate').disabled=one;$('returnDate').required=!one;invalidate()});
+$('depart').addEventListener('change',()=>{const d=$('depart').value;$('returnDate').min=d;if($('returnDate').value<=d)$('returnDate').value=''});
+function invalidate(){quote=null;offers=[];selected=null;searchContext=null;renderQuote();$('offers').replaceChildren();$('pricing').classList.add('hidden');note('searchStatus','Details changed. Search again for a fresh fictional comparison.')}
+$('searchForm').addEventListener('input',invalidate);
+function searchData(){
+ const x={origin:$('origin').value.trim().toUpperCase(),destination:$('destination').value.trim().toUpperCase(),departureDate:$('depart').value,returnDate:$('trip').value==='ROUND_TRIP'?$('returnDate').value:null,tripType:$('trip').value,adults:Number($('adults').value),children:Number($('children').value),infants:Number($('infants').value),cabin:$('cabin').value,preference:$('preference').value};
+ if(!/^[A-Z]{3}$/.test(x.origin)||!/^[A-Z]{3}$/.test(x.destination)||x.origin===x.destination)throw Error('Use two different three-letter airport codes.');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(x.departureDate)||x.departureDate<isoAfter(0))throw Error('Choose a valid future departure.');
+ if(x.tripType==='ROUND_TRIP'&&(!x.returnDate||x.returnDate<=x.departureDate))throw Error('Return must be after departure.');
+ if(!Number.isInteger(x.adults)||x.adults<1||x.adults>9||!Number.isInteger(x.children)||x.children<0||x.children>8||!Number.isInteger(x.infants)||x.infants<0||x.infants>x.adults||x.adults+x.children>9)throw Error('Check passenger counts (max 9 seated, infants not more than adults).');
+ return x;
+}
+const usd=n=>'USD '+n.toLocaleString('en-US');
+const duration=n=>Math.floor(n/60)+'h '+String(n%60).padStart(2,'0')+'m';
+const money=f=>f.price+markup;
+function redraw(){
+ const root=$('offers');root.replaceChildren();
+ if(!offers.length){$('resultsIntro').textContent='Run a search first.';return}
+ $('resultsIntro').textContent=searchContext.origin+' → '+searchContext.destination+' · '+searchContext.departureDate+' · FICTIONAL RESULTS';
+ for(const f of offers){
+  const item=document.createElement('article');item.className='offer'+(selected===f.id?' selected':'');
+  const head=document.createElement('div');head.className='pill';head.textContent=f.id;
+  const title=document.createElement('h3');title.textContent=f.airline;title.style.marginTop='12px';
+  const price=document.createElement('div');price.className='price';price.textContent=usd(money(f));
+  const warning=document.createElement('p');warning.className='small muted';warning.textContent='Invented adjusted price · NOT a customer offer';
+  const info=document.createElement('div');info.className='line';info.textContent=duration(f.durationMinutes)+' · '+f.stops+' stop(s)';
+  const pick=document.createElement('button');pick.type='button';pick.className='btn '+(selected===f.id?'alt':'ghost')+' full';pick.textContent=selected===f.id?'✓ Selected':'Select this sample';
+  pick.addEventListener('click',()=>{if(selected!==f.id){quote=null;selected=f.id;renderQuote();redraw()}tab('quote')});
+  item.append(head,title,price,warning,info,pick);root.append(item);
+ }
+ $('pricing').classList.remove('hidden');renderQuote();
+}
+function setMarkup(value){
+ const n=Number(value);if(value===''||!Number.isSafeInteger(n)||n<0||n>500){$('markupExact').value=String(markup);note('searchStatus','Markup must be a whole number from 0 to 500.',true);return}
+ if(markup!==n)quote=null;markup=n;$('markupSlider').value=String(n);$('markupExact').value=String(n);$('markupLabel').textContent=usd(n);redraw();
+}
+$('markupSlider').addEventListener('input',e=>setMarkup(e.target.value));
+$('markupExact').addEventListener('change',e=>setMarkup(e.target.value));
+$('nextQuote').addEventListener('click',()=>tab('quote'));
+$('searchForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!user){note('searchStatus','Please sign in.',true);return}
+ $('searchButton').disabled=true;note('searchStatus','Checking secure demo…');
+ try{
+  const x=searchData();const data=await call('nurgat-flight-research-demo',x);
+  if(data?.ok!==true||data?.mode!=='FICTIONAL_DEMO_ONLY'||data?.providerConnected!==false||data?.fareVerified!==false||data?.customerSendAllowed!==false||data?.bookingAvailable!==false||data?.ticketIssuanceAllowed!==false||!Array.isArray(data.offers)||data.offers.length!==3)throw Error('Demo backend response did not pass safety checks.');
+  const seen=new Set();const options=data.offers.map(f=>{
+   if(!f||!/^DEMO-[A-C]$/.test(f.id)||seen.has(f.id)||!/^Sample Air [A-C]$/.test(f.airline)||f.currency!=='USD'||!Number.isSafeInteger(f.illustrativeTotal)||f.illustrativeTotal<0||!Number.isSafeInteger(f.durationMinutes)||f.durationMinutes<1||!Number.isSafeInteger(f.stops)||f.stops<0||f.stops>4)throw Error('Unexpected demonstration flight fields.');
+   seen.add(f.id);return {id:f.id,airline:f.airline,price:f.illustrativeTotal,stops:f.stops,durationMinutes:f.durationMinutes};
+  });
+  const p=x.preference;
+  options.sort((a,b)=>p==='FASTEST'?a.durationMinutes-b.durationMinutes:p==='FEWEST_STOPS'?a.stops-b.stops:p==='CHEAPEST'?a.price-b.price:(a.price/1000+a.durationMinutes/1000+a.stops*.27)-(b.price/1000+b.durationMinutes/1000+b.stops*.27));
+  offers=options;searchContext=x;selected=null;quote=null;note('searchStatus','Three fictional flights found. No real GDS used.');redraw();tab('results');
+ }catch(err){offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true)}
+ finally{$('searchButton').disabled=false}
+});
+function quoteText(q){return [
+ 'NURGAT TOURS — INTERNAL TRAINING ONLY',
+ 'FICTIONAL FLIGHT — NOT A CUSTOMER QUOTE — NEVER SEND',
+ 'Test record: '+q.reference,'Status: '+(q.reviewed?'REVIEWED DEMO ONLY':'UNREVIEWED DEMO'),
+ 'Route: '+q.route,'Departure: '+q.departure,'Return: '+(q.returnDate||'One way'),
+ 'Passengers: '+q.passengers,'Cabin: '+q.cabin,
+ 'Fictional sample: '+q.airline+' ('+q.id+')',
+ 'Sample duration: '+duration(q.durationMinutes)+'; stops: '+q.stops,
+ 'FICTIONAL starting price: '+usd(q.price),
+ 'SIMULATED adjustment: '+usd(q.markup),
+ 'INVENTED adjusted total: '+usd(q.price+q.markup),
+ 'Verified availability: NO. Baggage and fare rules: UNKNOWN.',
+ 'CUSTOMER DELIVERY: LOCKED. BOOKING: DISABLED.',
+ 'INTERNAL TRAINING ONLY — NEVER SEND TO A CUSTOMER.'
+ ].join('\n')}
+function renderQuote(){
+ const f=offers.find(o=>o.id===selected);
+ $('chosenSummary').textContent=f?'Selected: '+f.airline+' · '+usd(money(f))+' (invented)':'No fictional flight selected.';
+ $('reviewQuote').disabled=!quote||quote.reviewed;
+ $('copyQuote').disabled=!quote;$('discardQuote').disabled=!quote;
+ $('quotePreview').classList.toggle('hidden',!quote);$('quotePreview').textContent=quote?quoteText(quote):'';
+ note('quoteStatus',quote?(quote.reviewed?'Internally reviewed TEST ONLY. Customer sending remains locked.':'Test draft prepared. Not reviewed and not customer-ready.'):'No internal draft yet.');
+}
+$('makeQuote').addEventListener('click',()=>{
+ if(!user||!searchContext||!selected){note('quoteStatus','Select a fictional flight first.',true);return}
+ const f=offers.find(o=>o.id===selected);if(!f)return;
+ quote={reference:'LITE-TEST-'+Date.now().toString(36).toUpperCase(),reviewed:false,id:f.id,airline:f.airline,price:f.price,stops:f.stops,durationMinutes:f.durationMinutes,markup,route:searchContext.origin+' → '+searchContext.destination,departure:searchContext.departureDate,returnDate:searchContext.returnDate,passengers:searchContext.adults+' adult(s), '+searchContext.children+' child(ren), '+searchContext.infants+' infant(s)',cabin:searchContext.cabin};
+ renderQuote();
+});
+$('reviewQuote').addEventListener('click',()=>{if(quote){quote.reviewed=true;renderQuote()}});
+$('discardQuote').addEventListener('click',()=>{quote=null;renderQuote()});
+$('copyQuote').addEventListener('click',async()=>{
+ if(!quote)return;try{await navigator.clipboard.writeText(quoteText(quote));note('quoteStatus','Watermarked internal test copied. DO NOT SEND to customers.')}catch{note('quoteStatus','Clipboard unavailable. No message was sent.',true)}
+});
+$('aiForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!user||!offers.length){note('aiStatus','Sign in and run a fictional flight search first.',true);return}
+ const question=$('aiQuestion').value.trim();
+ if(question.length<4||question.length>230||/@|https?:|[0-9]{8,}/i.test(question)){note('aiStatus','Use a short question without personal details, links or account numbers.',true);return}
+ $('aiButton').disabled=true;note('aiStatus','Asking AI…');$('aiAnswer').classList.add('hidden');
+ try{const data=await call('nurgat-staff-flight-ai-demo',{question,selectedId:selected});
+ if(data?.ok!==true||data?.source!=='NURGAT_AI_DEMO'||data?.demoOnly!==true||data?.providerConnected!==false||data?.customerSendAllowed!==false||data?.bookingAvailable!==false||typeof data.answer!=='string'||data.answer.length>1350)throw Error('AI output failed demo checks.');
+ $('aiAnswer').textContent=data.answer;$('aiAnswer').classList.remove('hidden');note('aiStatus','AI answered about fictional flight context only.');
+ }catch(err){note('aiStatus',err.message,true)}finally{$('aiButton').disabled=false}
+});
+$('planButton').addEventListener('click',async()=>{
+ if(!user){note('planStatus','Sign in first.',true);return}
+ $('planButton').disabled=true;$('planAnswer').classList.add('hidden');note('planStatus','Preparing dry-run GDS plan…');
+ try{const data=await call('nurgat-gds-planner-demo',searchData());
+ if(data?.ok!==true||data.mode!=='AWAITING_GDS_CONNECTION'||data.providerConnected!==false||data.commandExecutionAllowed!==false||data.customerSendAllowed!==false||data.bookingAvailable!==false||data.customerQuoteAvailable!==false||typeof data.plan!=='string'||data.plan.length>2500)throw Error('GDS plan failed safety verification.');
+ $('planAnswer').textContent=data.plan;$('planAnswer').classList.remove('hidden');note('planStatus','Ready for API integration; no commands executed.');
+ }catch(err){note('planStatus',err.message,true)}finally{$('planButton').disabled=false}
+});
+checkUser();
+</script></body></html>
