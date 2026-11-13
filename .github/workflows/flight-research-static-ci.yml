@@ -1,0 +1,19 @@
+name: Flight Research Dashboard Static Tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'scripts/test-flight-ui.mjs'
+      - '.github/workflows/flight-research-static-ci.yml'
+permissions:
+  contents: read
+jobs:
+  static-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate flight workspace without external services
+        run: node scripts/test-flight-ui.mjs
