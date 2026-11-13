@@ -25,3 +25,7 @@ See [Flight Provider Integration — Architecture & Release Gates](docs/FLIGHT_P
 ## Pre-approval automation work
 
 See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n flight request tests, dual-provider fixtures, budget-threshold checks, failure reports, and exact tasks requiring business authorization.
+
+## Latest independent pre-API audit
+
+[Pre-API System Audit — 2026-11-13](docs/PRE_API_SYSTEM_AUDIT_2026-11-13.md) summarizes verified offline tests, email monitoring fixes, security findings, and remaining authorization gates. It does not certify production readiness.
