@@ -90,3 +90,7 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - New [internal n8n AI-to-AI handoff workflow](https://nurgattourszm.app.n8n.cloud/workflow/Ovchtd30RvioSeL7) created; **unpublished** pending E2E authorization and ingress hardening.
 - Validated structured flight details can flow from AI 1 into the existing read-only AI 2 planner; no WhatsApp, GDS pricing, bookings or customer sending are active.
 - [Architecture, security and activation checklist](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md).
+
+## GDS API meeting preparation
+- [API meeting readiness pack](docs/GDS_API_MEETING_READINESS_PACK_2026-11-13.md) covers provider licensing/entitlements, sandbox access, permitted operations, fare rules, agency approval, WhatsApp ownership, security and next actions.
+- AI1→AI2 n8n simulated workflow tests: valid dry-run succeeded (execution 99); invalid personal-data/missing-JWT/unsafe-output cases rejected (100–102). Workflow remains **unpublished** pending live authenticated end-to-end tests and replay controls.
