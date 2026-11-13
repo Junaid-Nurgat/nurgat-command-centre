@@ -15,6 +15,13 @@ const required=[
  'id="frMarkupSlider"','id="frMarkupExact"','function frSetMarkup',
  'id="frLiveAiForm"','id="frLiveAiQuestion"','id="frLiveAiButton"',
  'id="frGdsPlanButton"','id="frGdsPlan"',
+ 'id="frQuoteCreate"','id="frQuoteReview"','id="frQuoteCopy"',
+ 'id="frQuoteDiscard"','id="frQuoteDraftPanel"',
+ 'function frQuoteText(q)','function frQuoteInvalidate(reason)',
+ 'frQuoteInvalidate(\'Selected flight changed.\')',
+ 'frQuoteInvalidate(\'Markup changed.\')',
+ 'frQuoteInvalidate(\'Travel details changed.\')',
+
  "async function gdsPlanDemo(requestPayload)", "client.gdsPlanDemo(request)",
  "mode!=='AWAITING_GDS_CONNECTION'", "commandExecutionAllowed!==false",
  "async function flightAiDemo(payload)","client.flightAiDemo(",
@@ -63,4 +70,28 @@ assert.equal(context.frIntent('Find the cheapest flight'),'cheapest');
 assert.equal(context.frIntent('Shortest flight duration'),'fastest');
 assert.equal(context.frIntent('Is baggage included?'),'baggage');
 assert.equal(context.frIntent('What are cancellation fees?'),'rules');
-console.log('PASS: dashboard syntax, all critical controls, safe data contract markers and research helper scenarios.');
+
+// Internal quote preview is explicitly non-deliverable.
+assert.ok(html.includes('Customer delivery locked.'),'Demo quotation sending remains blocked');
+const quoteStart=source.indexOf('function frQuoteText(q){');
+const quoteEnd=source.indexOf('function frQuoteRender(){',quoteStart);
+assert.ok(quoteStart>=0&&quoteEnd>quoteStart,'Quote preview formatter exists');
+const quoteContext={
+ frDuration:m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m',
+ frMoney:n=>'USD '+n.toLocaleString('en-US')
+};
+vm.runInNewContext(source.slice(quoteStart,quoteEnd),quoteContext);
+const testDraft={ref:'TEST-001',status:'DRAFT',route:'LUN → DXB',departure:'2026-12-15',
+ tripType:'ONE_WAY',returnDate:null,adults:1,children:0,infants:0,cabin:'ECONOMY',
+ airline:'Sample Air B',flightId:'DEMO-B',duration:1020,stops:2,price:735,markup:125};
+const watermarked=quoteContext.frQuoteText(testDraft);
+assert.match(watermarked,/INTERNAL TRAINING ONLY/);
+assert.match(watermarked,/NOT A CUSTOMER QUOTE/);
+assert.match(watermarked,/NEVER SEND/);
+assert.match(watermarked,/USD 860/);
+assert.match(watermarked,/Customer delivery: LOCKED/);
+testDraft.status='REVIEWED';
+assert.match(quoteContext.frQuoteText(testDraft),/REVIEWED DEMO ONLY/);
+assert.match(quoteContext.frQuoteText(testDraft),/Customer delivery: LOCKED/);
+
+console.log('PASS: dashboard syntax, all critical controls, safe data contract markers and research helper and quote-review scenarios.');
