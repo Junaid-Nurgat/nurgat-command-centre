@@ -54,3 +54,9 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Source JS syntax checked and Edge Function deployed; **authorized signed-in browser/CORS testing is still required**.
 - [Secure flight-search API contract and browser verification checklist](docs/SECURE_STAFF_FLIGHT_RESEARCH_CONTRACT_2026-11-13.md).
 - [Automated UI regression checks](scripts/test-flight-ui.mjs) via [GitHub Actions](.github/workflows/flight-research-static-ci.yml). CI workflow added; first green CI run not yet confirmed.
+
+## Internal markup preview (v1.3)
+- The AI Flight Research **internal markup simulator** has a USD slider and exact-number input (fictional USD 0–500 adjustment per itinerary); card totals, comparison table, selection details and offline helper update automatically.
+- Markup and starting fare figures are **fictional training figures**. They are not saved, sent to a customer or eligible for use in live quotes. The limit is a UI demo limit, **not** an authorized business policy.
+- A real markup policy and final-quote allowlist will require owner approval and server-side enforcement after the genuine GDS integration.
+- [Implementation and security details](docs/STAFF_MARKUP_CONTROL_2026-11-13.md).
