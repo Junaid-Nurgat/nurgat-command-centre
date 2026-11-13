@@ -32,6 +32,71 @@ input[type=range]{width:100%;accent-color:var(--teal);min-height:38px}.pricebar{
 details{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}summary{cursor:pointer;font-weight:800;font-size:13px}
 @media(max-width:600px){main{padding:17px 13px 104px}.card{padding:18px;border-radius:17px;margin:12px 0}.cols{grid-template-columns:1fr}.actions{display:grid;grid-template-columns:1fr 1fr}.actions .btn{min-width:0}.hidephone{display:none}.top .switch{font-size:11px;padding:8px}.logo{font-size:14px}}
 @media(min-width:700px){.bottomnav{position:sticky;top:0;bottom:auto;border:1px solid var(--line);border-radius:16px;max-width:730px;margin:0 auto 18px;box-shadow:0 7px 15px #143b3910}.tab{font-size:13px;min-height:58px}.tab span{display:inline;margin-right:8px;font-size:18px}}
+
+/* Lite visual refresh v2: editorial clarity + premium travel feel. Core flows unchanged. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+:root{--ink:#183840;--muted:#627982;--teal:#057d70;--deep:#102f38;--bg:#f4f7f6;--card:#fff;--line:#e1e9e7;--warn:#985b1d;--danger:#b6404d;--ring:0 0 0 4px rgba(5,125,112,.12)}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;background:radial-gradient(ellipse 1100px 420px at 50% -230px,#d9eee6 0%,transparent 80%),#f4f7f6;color:var(--ink);letter-spacing:-.005em}
+header{background:radial-gradient(ellipse 70% 270% at 85% 0,rgba(41,145,135,.33),transparent 60%),linear-gradient(120deg,#0e3038,#163f47 75%);padding:20px max(18px,env(safe-area-inset-left));box-shadow:0 9px 28px rgba(12,50,53,.08)}
+header:after{content:"";display:block;height:1px;background:linear-gradient(90deg,transparent,rgba(168,240,222,.25),transparent);position:absolute;bottom:0;left:7%;right:7%}
+.logo{font-family:Manrope,'DM Sans',sans-serif;letter-spacing:-.035em;line-height:1.18;font-size:18px}.mark{width:45px;height:45px;border:1px solid rgba(255,255,255,.4);border-radius:15px;background:linear-gradient(145deg,#d3f8ef,#91d7c6);box-shadow:0 5px 14px rgba(0,0,0,.13);font-size:25px;color:#154a49}.tag{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.12em;font-weight:800;color:#abd5ce;margin-top:5px}
+.switch{border-color:rgba(208,240,234,.34);background:rgba(255,255,255,.06);border-radius:11px;font-weight:700;min-height:39px;display:inline-flex;align-items:center;white-space:nowrap}
+.switch:hover{background:rgba(255,255,255,.12)}
+main{max-width:930px;padding-top:28px}
+h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}h1{font-size:clamp(30px,5.3vw,42px);font-weight:800;letter-spacing:-.058em}h2{font-size:clamp(21px,3.3vw,25px);font-weight:800;line-height:1.25}h3{letter-spacing:-.03em;font-weight:800}
+.sub{font-size:14px;line-height:1.6}
+.card{border-color:#e1e9e6;border-radius:24px;padding:27px;background:linear-gradient(170deg,#fff 0%,#fff 76%,#fcfefd 100%);box-shadow:0 10px 32px rgba(20,57,60,.045),0 2px 5px rgba(20,57,60,.02)}
+.card:has(.step){position:relative;overflow:hidden}
+.card:has(.step):before{content:"";position:absolute;right:-39px;top:-50px;width:130px;height:130px;border-radius:50%;border:21px solid rgba(27,143,124,.035);pointer-events:none}
+.step{background:#e9f5f0;border:1px solid #d0e8e0;color:#13725e;letter-spacing:.09em;font-size:10px;padding:7px 11px}
+.demo{background:#fff8ee;border:1px solid #edddc6;color:#86551f;border-radius:14px;line-height:1.7;padding:13px 15px}
+#workspace>.demo{margin-bottom:14px}
+.field{font-size:12px;font-weight:800;color:#425e66;letter-spacing:.01em;margin-top:17px}
+.field input,.field select,.field textarea{font-size:15px;border:1px solid #d5e0dd;background:#fbfdfc;border-radius:13px;min-height:53px;padding:14px 15px;margin-top:8px;box-shadow:inset 0 1px 1px rgba(30,70,74,.025);transition:border-color .15s,box-shadow .15s,background .15s}
+.field input:hover,.field select:hover{border-color:#accfc4}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#2b9d8c;box-shadow:var(--ring);background:white}
+.field input::placeholder{color:#9aadb1}
+.cols{gap:0 18px}
+.btn{border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;min-height:52px;background:linear-gradient(135deg,#0b8b7b,#056d63);box-shadow:0 5px 12px rgba(5,125,112,.12);transition:transform .12s,filter .12s,box-shadow .12s}
+.btn:hover:not(:disabled){filter:brightness(1.05);box-shadow:0 7px 16px rgba(5,125,112,.18)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.alt{background:#e9f5f0;color:#0c6559;box-shadow:none}
+.btn.ghost{background:white;color:#2b4f56;border:1px solid #d5e3de;box-shadow:none}
+.btn:disabled{box-shadow:none}
+.status{font-size:13px;line-height:1.65}
+.bottomnav{border-top:1px solid #dbe7e1;background:rgba(255,255,255,.97);box-shadow:0 -12px 30px rgba(26,64,63,.065);gap:5px;backdrop-filter:blur(15px)}
+.tab{font-family:'DM Sans',sans-serif;border-radius:13px;letter-spacing:.005em;transition:background .14s,color .14s;position:relative;min-height:60px}
+.tab span{font-family:system-ui,sans-serif;font-size:20px}
+.tab.active{background:#eaf7f0;color:#086e61}
+.tab.active:after{content:"";position:absolute;bottom:4px;left:38%;width:24%;height:3px;border-radius:5px;background:#138875}
+.offer{border:1px solid #dce6e1;border-radius:20px;background:linear-gradient(160deg,#fff,#fafdfb);padding:21px;margin:13px 0;box-shadow:0 6px 17px rgba(15,59,59,.035);transition:border-color .15s,box-shadow .15s}
+.offer.selected{border:2px solid #0e9a83;background:#effbf6;box-shadow:0 0 0 4px rgba(13,147,123,.08)}
+.offer .price{font-family:Manrope,sans-serif;font-size:30px;font-weight:800;letter-spacing:-.065em;color:#124a46;margin:11px 0 5px}
+.offer .line{padding:10px 0;margin:10px 0;color:#57727b}
+.offer .btn{margin-top:9px}
+.pill{border:1px solid #d6e7df;background:#ebf6f1;color:#0c6c5a;border-radius:7px;padding:6px 9px;letter-spacing:.07em;font-size:10px}
+.pricebar{background:linear-gradient(130deg,#edf9f4,#f7fbf8);border:1px solid #d7eee3;border-radius:19px;padding:19px}
+.pricebar .line{font-size:15px}.pricebar #markupLabel{color:#0a7769;font-family:Manrope,sans-serif}
+input[type=range]{accent-color:#0a8979;cursor:pointer}
+.quote{border:1px dashed #b8d3c8;background:#f7faf8;color:#31535b;border-radius:15px;padding:19px;box-shadow:inset 0 2px 5px rgba(20,65,62,.02)}
+details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:17px}summary{font-size:13px;color:#31535b}
+#login{max-width:520px;margin:35px auto 0;padding:32px}#login .btn{margin-top:13px}
+#chosenSummary:not(:empty){line-height:1.6}
+#workspace>div:first-child{padding:7px 2px}
+#workspace>div:first-child .btn{box-shadow:none}
+@media(max-width:600px){
+ header{padding-top:17px;padding-bottom:17px}.logo{font-size:15px}.mark{width:40px;height:40px;font-size:22px;border-radius:13px}
+ main{padding:18px 13px calc(112px + env(safe-area-inset-bottom))}.card{padding:21px 18px;border-radius:21px;margin:14px 0}
+ .card:has(.step):before{right:-60px;top:-75px}
+ .field{margin-top:14px}.field input,.field select{min-height:52px}.sub{font-size:13px}
+ #login{margin:20px auto 0;padding:24px 20px}
+ .actions{gap:9px}.actions .btn{padding:10px;font-size:12px;min-height:52px}
+ .tab{min-height:59px;font-size:11px}.tab span{font-size:19px}
+ .offer{padding:18px}.offer .price{font-size:27px}.demo{font-size:12px}
+}
+@media(min-width:700px){.bottomnav{border:1px solid #dce9e4;box-shadow:0 8px 25px rgba(16,58,54,.06);background:white;padding:8px}.tab{min-height:51px}.tab.active:after{bottom:5px}.card{margin-top:21px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
 </style></head><body>
 <header><div class="top"><div class="logo"><span class="mark">N</span><div>Nurgat Tours <div class="tag">COMMAND CENTRE LITE · TEST VERSION</div></div></div><a class="switch" href="./index.html">Original ↗</a></div></header>
 <main>
@@ -42,7 +107,7 @@ details{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:
 </section>
 <div id="workspace" class="hidden">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 15px"><div><div class="tag" style="color:#428174">NURGAT TOURS</div><h1>Flight workspace</h1><p class="sub" style="margin:0">Simple steps. Built for your phone.</p></div><button class="btn ghost" id="logout" style="font-size:12px;min-height:40px">Log out</button></div>
-<div class="demo"><strong>SAFE DEMO:</strong> All airlines and fares below are fictional. There is no live GDS access. No customer messages, real quotes, bookings or ticketing.</div>
+<div class="demo"><strong>◉ Training mode</strong> — Fictional flights and fares only. Real GDS access, customer quotations, messaging and bookings remain disabled.</div>
 <nav class="bottomnav" aria-label="Lite tasks">
 <button class="tab active" data-tab="search"><span>⌕</span>Search</button>
 <button class="tab" data-tab="results"><span>✈</span>Flights</button>
@@ -50,7 +115,7 @@ details{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:
 <button class="tab" data-tab="ai"><span>✦</span>AI tools</button>
 </nav>
 <section id="step-search" class="stepview">
-<div class="card"><span class="step">STEP 1 · SEARCH</span><h2 style="margin-top:12px">Where are they flying?</h2><p class="sub">Enter only test travel details, not real customer information.</p>
+<div class="card"><span class="step">01 / 03 · SEARCH</span><h2 style="margin-top:12px">Where are they flying?</h2><p class="sub">Enter only test travel details, not real customer information.</p>
 <form id="searchForm">
 <div class="cols"><label class="field">From (IATA)<input id="origin" required maxlength="3" pattern="[A-Za-z]{3}" value="LUN"></label><label class="field">To (IATA)<input id="destination" required maxlength="3" pattern="[A-Za-z]{3}" value="DXB"></label></div>
 <label class="field">Trip type<select id="trip"><option value="ROUND_TRIP">Round trip</option><option value="ONE_WAY">One way</option></select></label>
@@ -61,12 +126,12 @@ details{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:
 </form><p id="searchStatus" class="status" role="status"></p>
 </div></section>
 <section id="step-results" class="stepview hidden">
-<div class="card"><span class="step">STEP 2 · COMPARE</span><h2 style="margin-top:12px">Choose a sample flight</h2><p class="sub" id="resultsIntro">Search for sample flights first.</p>
+<div class="card"><span class="step">02 / 03 · COMPARE</span><h2 style="margin-top:12px">Choose a sample flight</h2><p class="sub" id="resultsIntro">Search for sample flights first.</p>
 <div id="offers"></div>
 <div id="pricing" class="hidden"><div class="pricebar"><div class="line"><strong>Internal demo markup</strong><strong id="markupLabel">USD 0</strong></div><input id="markupSlider" type="range" min="0" max="500" step="10" value="0" aria-label="Fictional markup"><label class="field">Exact markup (USD)<input id="markupExact" type="number" min="0" max="500" step="1" value="0"></label><p class="small muted">Once per fictional itinerary. Never an approved supplier markup or a real quotation.</p></div><button class="btn full" id="nextQuote">Continue to test quote →</button></div>
 </div></section>
 <section id="step-quote" class="stepview hidden">
-<div class="card"><span class="step">STEP 3 · INTERNAL QUOTE</span><h2 style="margin-top:12px">Prepare a test quotation</h2><div class="demo">Customer delivery is <strong>LOCKED</strong>. Review and copy are for clearly watermarked internal test records only.</div>
+<div class="card"><span class="step">03 / 03 · QUOTATION</span><h2 style="margin-top:12px">Prepare a test quotation</h2><div class="demo">Customer delivery is <strong>LOCKED</strong>. Review and copy are for clearly watermarked internal test records only.</div>
 <div id="chosenSummary" class="small muted" style="margin-top:15px">No sample flight selected.</div>
 <div class="actions"><button class="btn" id="makeQuote">Prepare test draft</button><button class="btn alt" id="reviewQuote" disabled>Mark demo reviewed</button><button class="btn ghost" id="copyQuote" disabled>Copy test text</button><button class="btn ghost" id="discardQuote" disabled>Discard</button></div>
 <p id="quoteStatus" class="status" role="status"></p><pre id="quotePreview" class="quote hidden"></pre>
