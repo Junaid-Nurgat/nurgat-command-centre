@@ -69,7 +69,7 @@ GitHub Actions workflow: `.github/workflows/external-reachability.yml`, manually
 2. Public CEO GitHub Pages website.
 3. Public Supabase Auth health endpoint.
 
-A failed curl causes a **failed GitHub Actions run**, visible in the repository **Actions** tab. Configure **GitHub Actions failure notifications** for the authorized adult operator and verify with a deliberate controlled failure on a separate test configuration. This workflow cannot confirm actual login, internal workflow success, Gmail delivery, AI accuracy, remaining credits, or real GDS availability.
+A connection failure or unexpected HTTP response causes a **failed GitHub Actions run**, visible in the repository **Actions** tab. For the public Supabase Auth health endpoint, **HTTP 401 is accepted as a reachable, authentication-protected response** (while 5xx and connection failures still fail); the other two endpoints require HTTP 2xx. This does not verify authenticated health. Configure **GitHub Actions failure notifications** for the authorized adult operator and verify with a deliberate controlled failure on a separate test configuration. This workflow cannot confirm actual login, internal workflow success, Gmail delivery, AI accuracy, remaining credits, or real GDS availability.
 
 **Not yet verified:** a completed scheduled GitHub Actions run or a human receiving GitHub's failure notification. Scheduled jobs can be delayed/dropped and are disabled after inactivity in a public repository. GitHub's own outages or disabled Actions also stop this independent monitor. It is a supplementary early-warning layer, not an SLA-grade service. Sources: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows and https://docs.github.com/en/actions/how-tos/troubleshoot-workflows .
 
@@ -92,3 +92,6 @@ A failed curl causes a **failed GitHub Actions run**, visible in the repository 
 - True automated off-platform, encrypted workflow+credential backup: **not built**; requires a private authorized destination and owner-grade export permissions.
 - Real Amadeus/Travelport access and production authorization: **pending**.
 - Credit and usage limit enforcement: **pending verified billing integrations**.
+
+### First scheduled run diagnosis (2026-11-13)
+The first received GitHub Actions alert showed that the Supabase Auth health URL returned HTTP **401 Unauthorized**, causing a false outage alarm because the old shell check used `curl --fail`. Corrected in commit `fabc968934724f03c907da859a2e2033afcd07f6`; the protected endpoint accepts 401 as proof of an HTTP response, not proof of functioning authentication. **A post-fix successful Actions run is still required** to verify the new workflow in GitHub's runner environment.
