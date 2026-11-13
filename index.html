@@ -89,7 +89,12 @@
  </div>
  <form id="frAskForm" class="frask" autocomplete="off"><label class="field" for="frQuestion">Your question<input id="frQuestion" maxlength="160" placeholder="e.g. Which demo flight is cheapest?" aria-describedby="frQuestionHelp"></label><button type="submit" class="btn">Ask helper</button></form>
  <p class="footnote" id="frQuestionHelp">Local demonstration only: no conversation data is sent, saved, or used to search real flights. Supported: cheapest, fastest, fewest stops, selected option, baggage, and fare rules.</p>
- <div id="frAnswer" class="franswer" role="status" aria-live="polite">Run a demo search first. Then ask about the results.</div></div></section>
+ <div id="frAnswer" class="franswer" role="status" aria-live="polite">Run a demo search first. Then ask about the results.</div></div>
+<div class="frassistant" style="margin-top:15px"><div class="split"><strong>✦ Ask Flight AI — Live language model</strong><span class="chip warn">FICTIONAL FLIGHTS ONLY</span></div>
+<p class="subtitle" style="margin-top:9px">Ask about sample durations and stops. AI cannot see confidential fares, markup, customer data, or GDS results.</p>
+<form id="frLiveAiForm" class="frask" style="margin-top:13px" autocomplete="off"><label class="field" for="frLiveAiQuestion">Your question<input id="frLiveAiQuestion" type="text" minlength="4" maxlength="230" required placeholder="Explain which sample flight has fewer stops" autocomplete="off"></label><button id="frLiveAiButton" class="btn" type="submit">Ask AI</button></form>
+<p class="footnote">Authorized staff demo only. Do not enter customer names, emails, phone numbers, passport details or real booking references. AI Gateway credits may be consumed.</p>
+<p id="frLiveAiStatus" class="message" role="status" aria-live="polite"></p><div id="frLiveAiAnswer" class="franswer hidden" aria-live="polite"></div></div></section>
 </section>
 <section id="pending" class="view"><div class="panel"><div class="panelhead"><div><h2>Awaiting approval</h2><p>Pending quotations only. Approved and rejected decisions automatically move to history.</p></div></div><div class="toolbar"><input class="search" id="pendingSearch" type="search" placeholder="Search reference or route" aria-label="Search pending quotations"></div><div class="tablewrap" id="pendingTable"></div></div></section>
 <section id="drafts" class="view"><div class="panel"><div class="panelhead"><div><h2>To be submitted</h2><p>Quotations that are not yet in the CEO decision queue.</p></div></div><div class="toolbar"><input class="search" id="draftsSearch" type="search" placeholder="Search draft quotations" aria-label="Search draft quotations"></div><div class="tablewrap" id="draftsTable"></div></div></section>
@@ -242,7 +247,13 @@ function makeApiClient(url,key){
   if(x.error&&/jwt|expired/i.test(x.error.message)&&await refreshed())x=await request('/functions/v1/nurgat-flight-research-demo',{method:'POST',body:payload});
   return x;
  }
- return {auth,rpc,from,invokeAi,flightDemo};
+ async function flightAiDemo(payload){
+ if(!tokens?.access_token)return {data:null,error:{message:'Staff login required'}};
+ let x=await request('/functions/v1/nurgat-staff-flight-ai-demo',{method:'POST',body:payload});
+ if(x.error&&/jwt|expired/i.test(x.error.message)&&await refreshed())x=await request('/functions/v1/nurgat-staff-flight-ai-demo',{method:'POST',body:payload});
+ return x;
+}
+return {auth,rpc,from,invokeAi,flightDemo,flightAiDemo};
 }
 try {
  client=makeApiClient(URL,PUBLIC_KEY);
@@ -300,6 +311,42 @@ function frShowAnswer(intent){$('frAnswer').textContent=frAnswerFor(intent)}
 document.querySelectorAll('[data-fr-question]').forEach(b=>b.addEventListener('click',()=>frShowAnswer(b.dataset.frQuestion)));
 $('frAskForm').addEventListener('submit',e=>{e.preventDefault();frShowAnswer(frIntent($('frQuestion').value))});
 
+let frAiPending=false;
+function frAiReset(){
+ $('frLiveAiStatus').textContent='';
+ $('frLiveAiStatus').className='message';
+ $('frLiveAiAnswer').classList.add('hidden');
+ $('frLiveAiAnswer').textContent='';
+ $('frLiveAiQuestion').value='';
+}
+$('frLiveAiForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(frAiPending)return;
+ if(!state.user){$('frLiveAiStatus').textContent='Sign in with the authorized reviewer account.';return}
+ if(!frCurrentOffers.length){$('frLiveAiStatus').textContent='Run a fictional flight search first.';return}
+ const question=$('frLiveAiQuestion').value.trim();
+ if(question.length<4||question.length>230){$('frLiveAiStatus').textContent='Enter a question between 4 and 230 characters.';return}
+ if(question.includes('@')||question.includes('http:')||question.includes('https:')||/[0-9]{8,}/.test(question)){
+  $('frLiveAiStatus').className='message error';
+  $('frLiveAiStatus').textContent='Do not include emails, URLs, account numbers or personal information.';return;
+ }
+ frAiPending=true;$('frLiveAiButton').disabled=true;
+ $('frLiveAiStatus').className='message';
+ $('frLiveAiStatus').textContent='Asking the authenticated fictional-data flight AI…';
+ $('frLiveAiAnswer').classList.add('hidden');
+ try{
+  const {data,error}=await client.flightAiDemo({question,selectedId:frSelectedFlight});
+  if(error)throw Error(error.message||'AI endpoint unavailable');
+  if(data?.ok!==true||data?.source!=='NURGAT_AI_DEMO'||data?.demoOnly!==true||data?.providerConnected!==false||data?.customerSendAllowed!==false||data?.bookingAvailable!==false||typeof data?.answer!=='string'||data.answer.length>1350)throw Error('AI response did not pass demo safety verification');
+  $('frLiveAiAnswer').textContent=data.answer;
+  $('frLiveAiAnswer').classList.remove('hidden');
+  $('frLiveAiStatus').textContent='AI answered using fictional flights only.';
+ }catch(err){
+  $('frLiveAiStatus').className='message error';
+  $('frLiveAiStatus').textContent='AI demo unavailable: '+(err.message||'Unknown error')+'. The offline helper is still available.';
+ }finally{frAiPending=false;$('frLiveAiButton').disabled=false}
+});
+
 const frDateToday=new Date().toISOString().slice(0,10);
 $('frDeparture').min=frDateToday;$('frReturn').min=frDateToday;
 const frDefaultDate=new Date(Date.now()+35*86400000).toISOString().slice(0,10);
@@ -308,7 +355,7 @@ $('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;
 function frTripChanged(){const one=document.querySelector('input[name="frTrip"]:checked').value==='ONE_WAY';$('frReturn').disabled=one;$('frReturn').required=!one}
 document.querySelectorAll('input[name="frTrip"]').forEach(e=>e.addEventListener('change',frTripChanged));
 $('frDeparture').addEventListener('change',()=>{$('frReturn').min=$('frDeparture').value;if($('frReturn').value<=$('frDeparture').value)$('frReturn').value=''});
-$('frReset').addEventListener('click',()=>{ $('flightResearchForm').reset();$('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;frTripChanged();$('frStatus').textContent='';$('frResultsPanel').classList.add('hidden');frCurrentOffers=[];frClearSelection();frSetMarkup(0);$('frAnswer').textContent='Run a demo search first. Then ask about the results.'});
+$('frReset').addEventListener('click',()=>{ $('flightResearchForm').reset();$('frDeparture').value=frDefaultDate;$('frReturn').value=frDefaultReturn;frTripChanged();$('frStatus').textContent='';$('frResultsPanel').classList.add('hidden');frCurrentOffers=[];frClearSelection();frSetMarkup(0);frAiReset();$('frAnswer').textContent='Run a demo search first. Then ask about the results.'});
 function frError(message){$('frStatus').className='message error';$('frStatus').textContent=message;$('frResultsPanel').classList.add('hidden');frCurrentOffers=[];frClearSelection();$('frAnswer').textContent='Run a demo search first. Then ask about the results.'}
 function frDuration(min){return Math.floor(min/60)+'h '+String(min%60).padStart(2,'0')+'m'}
 let frMarkupAmount=0;
@@ -426,6 +473,7 @@ $('flightResearchForm').addEventListener('submit',async ev=>{
  else if(preference==='FEWEST_STOPS')offers.sort((a,b)=>a.stops-b.stops||a.price-b.price);
  else offers.sort((a,b)=>(a.price/1000+a.duration/1000+a.stops*.27)-(b.price/1000+b.duration/1000+b.stops*.27));
  const route=origin+' → '+destination;
+ frAiReset();
  frCurrentOffers=offers;frCurrentRoute=route;frClearSelection();
  $('frResultsTitle').textContent='Fictional comparisons · '+route;
  $('frResultsSubtitle').textContent=departure+(trip==='ROUND_TRIP'?' to '+ret:' · one way')+' · '+adults+' adult(s) · '+children+' child(ren) · '+infants+' infant(s) · '+$('frCabin').selectedOptions[0].text;
