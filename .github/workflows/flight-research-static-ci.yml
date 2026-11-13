@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'lite.html'
+      - 'scripts/test-lite-ui.mjs'
       - 'scripts/test-flight-ui.mjs'
       - '.github/workflows/flight-research-static-ci.yml'
 permissions:
@@ -16,4 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate flight workspace without external services
-        run: node scripts/test-flight-ui.mjs
+        run: |
+          node scripts/test-flight-ui.mjs
+          node scripts/test-lite-ui.mjs
