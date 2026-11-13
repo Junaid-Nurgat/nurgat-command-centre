@@ -29,3 +29,15 @@ Updated: 2026-11-13. Internal demo operations only.
 5. Review upstream workflow validation warnings and test recoverability in an authorized sandbox.
 
 No real customer data, payment credentials, GDS keys, or private API keys are contained in this document.
+
+## Update — November 13, 2026: Active Gmail alerts
+
+The earlier statement that email delivery was not configured is superseded by this update:
+
+- A Gmail OAuth credential is connected in the n8n project. The Global Failure Logger now sends sanitized administrator-only failure emails after recording the error, and stores Gmail message receipt IDs in the private failure log.
+- Actual agency-inbox email send verified in execution **77**. Production-mode failure-to-log-to-email-to-receipt verified by CEO AI Bridge execution **79** and logger execution **80**. Both are controlled tests, not actual service incidents.
+- A separate active Pending Failure Alert Recovery workflow (`ID2H2sN9gEwuFvKp`) checks every six hours for failure rows with `notification_state=PENDING`; empty queue verified in execution **82** and synthetic recovery logic in **83**.
+- Daily Reliability Snapshots remain active at 08:00 Africa/Lusaka.
+- **Still not enabled:** real n8n plan execution quota reads, AI Gateway credit tracking, spending enforcement, bounced-mail alerting, and general platform outage monitoring.
+
+For full audit, see [Pre-Approval Build Handoff](PRE_APPROVAL_HANDOFF.md).
