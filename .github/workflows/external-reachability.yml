@@ -1,0 +1,45 @@
+name: Nurgat Tours - External Reachability Check
+
+# Independent of n8n. Public endpoint checks only; no keys, tokens or customer data.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nurgat-external-reachability
+  cancel-in-progress: false
+
+jobs:
+  reachability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public services
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local label="$1" url="$2"
+            echo "::group::Checking ${label}"
+            if curl --fail --silent --show-error --location --max-time 20 --retry 2 --retry-delay 3 --output /dev/null "$url"; then
+              echo "PASS: ${label} responded successfully"
+            else
+              echo "::error title=${label} reachability failure::Public endpoint could not be reached successfully"
+              echo "::endgroup::"
+              return 1
+            fi
+            echo "::endgroup::"
+          }
+          failures=0
+          check 'n8n Cloud web interface' 'https://nurgattourszm.app.n8n.cloud/' || failures=$((failures+1))
+          check 'GitHub Pages CEO demo' 'https://junaid-nurgat.github.io/nurgat-command-centre/' || failures=$((failures+1))
+          check 'Supabase Auth health' 'https://ysakhagnlmhwbbmetjjc.supabase.co/auth/v1/health' || failures=$((failures+1))
+          if (( failures > 0 )); then
+            echo "::error title=Nurgat availability monitor::${failures} of 3 publicly reachable services failed"
+            exit 1
+          fi
+          echo "All three public endpoints were reachable. This does NOT prove internal automations or sign-in work."
