@@ -73,3 +73,9 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Generates a **non-executable AI research plan** from structured flight form values. No provider-specific cryptic commands or real GDS interface calls are generated while exact Amadeus/Travelport product and API remain unconfirmed.
 - Real coding/command automation requires the licensed provider's supported API or authorized integration method, verified documentation/permissions and the operator's pricing/booking approval rules. No credentials should be pasted into public GitHub/AI chat.
 - Deployment and isolated checks verified; actual signed-in browser response still needs the authorized account. [Complete handoff and remaining gates](docs/GDS_COMMAND_AUTOMATION_API_WAITING_HANDOFF_2026-11-13.md).
+
+## Internal quotation & customer handoff rehearsal (v1.6)
+- The Flight Research workspace now includes a **Quotation preparation & handoff** section: create fictional, watermarked internal draft; mark demo reviewed; copy internal test-only text; discard.
+- Changing itinerary, travel dates, passengers, sample markup, or signing out invalidates the demo draft. **This is not a real customer quote or a customer sending service.**
+- The interface lists the exact remaining release gates: licensed GDS, verified fare/rules/expiry, owner-approved markup, staff approval, approved delivery channel and auditable status tracking.
+- [Customer quote workflow and production handoff contract](docs/CUSTOMER_QUOTATION_HANDOFF_2026-11-13.md).
