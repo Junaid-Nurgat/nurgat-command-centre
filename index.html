@@ -465,6 +465,15 @@ function frQuoteInvalidate(reason){
  frQuoteDraft=null;frQuoteRender();
  $('frQuoteStatus').textContent=reason+' Existing draft invalidated.';
 }
+// Revisions of trip details invalidate reviewed/draft training snapshots immediately.
+$('flightResearchForm').addEventListener('input',e=>{
+ if(e.target?.id==='frReference')return;
+ frQuoteInvalidate('Travel details changed.');
+});
+$('flightResearchForm').addEventListener('change',e=>{
+ if(e.target?.id==='frReference')return;
+ frQuoteInvalidate('Travel details changed.');
+});
 $('frQuoteCreate').addEventListener('click',()=>{
  if(!state.user){$('frQuoteStatus').textContent='Sign in as an authorized staff reviewer first.';return}
  const f=frCurrentOffers.find(v=>v.flight===frSelectedFlight);
@@ -601,5 +610,5 @@ $('flightResearchForm').addEventListener('submit',async ev=>{
 });
 
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>changeView(b.dataset.view)));document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>changeView(b.dataset.open)));document.querySelectorAll('[data-reqfilter]').forEach(b=>b.addEventListener('click',()=>{state.reqFilter=b.dataset.reqfilter;document.querySelectorAll('[data-reqfilter]').forEach(e=>e.classList.toggle('active',e===b));renderRequests()}));for(const id of ['pendingSearch','draftsSearch','historySearch'])$(id).addEventListener('input',render);
-document.addEventListener('click',e=>{const ai=e.target.closest('[data-run-ai]');if(ai){processAiRequest(Number(ai.dataset.runAi),ai);return;}const b=e.target.closest('[data-quote]');if(b)quoteDetail(b.dataset.quote)});$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeDrawer()});$('closeDrawer').addEventListener('click',closeDrawer);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').classList.contains('hidden'))closeDrawer()});$('specialForm').addEventListener('submit',specialSubmit);$('cancelRequest').addEventListener('click',()=>$('requestForm').classList.add('hidden'));$('refreshBtn').addEventListener('click',loadAll);$('signOutBtn').addEventListener('click',async()=>{await client.auth.signOut();await establish()});$('exportHistory').addEventListener('click',()=>{const items=state.quotes.filter(completed);if(!items.length){alert('No decisions to export.');return}const rows=[['Reference','Route','Total','Status','Decision at'],...items.map(q=>[q.quote_reference,q.origin_iata+'-'+q.destination_iata,q.currency+' '+q.selling_total,statusLabel(q.approval_status),q.approved_at||''])];const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='nurgat-demo-decisions.csv';a.click();setTimeout(()=>window.URL.revokeObjectURL(a.href),1000)});
+document.addEventListener('click',e=>{const ai=e.target.closest('[data-run-ai]');if(ai){processAiRequest(Number(ai.dataset.runAi),ai);return;}const b=e.target.closest('[data-quote]');if(b)quoteDetail(b.dataset.quote)});$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeDrawer()});$('closeDrawer').addEventListener('click',closeDrawer);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').classList.contains('hidden'))closeDrawer()});$('specialForm').addEventListener('submit',specialSubmit);$('cancelRequest').addEventListener('click',()=>$('requestForm').classList.add('hidden'));$('refreshBtn').addEventListener('click',loadAll);$('signOutBtn').addEventListener('click',async()=>{frQuoteInvalidate('Signed out.');await client.auth.signOut();await establish()});$('exportHistory').addEventListener('click',()=>{const items=state.quotes.filter(completed);if(!items.length){alert('No decisions to export.');return}const rows=[['Reference','Route','Total','Status','Decision at'],...items.map(q=>[q.quote_reference,q.origin_iata+'-'+q.destination_iata,q.currency+' '+q.selling_total,statusLabel(q.approval_status),q.approved_at||''])];const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='nurgat-demo-decisions.csv';a.click();setTimeout(()=>window.URL.revokeObjectURL(a.href),1000)});
 </script></body></html>
