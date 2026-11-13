@@ -44,3 +44,13 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Actual flights, prices, baggage and fare rules remain **unverified** until the authorized Amadeus or Travelport provider API is connected and tested.
 - **Current phase:** guided staff UI demo; **next phase:** secure backend search contract, real provider integration, price verification, supplier-cost isolation, and operator approval.
 - [Revised scope: internal AI Flight Researcher](docs/AI_FLIGHT_RESEARCHER_REVISED_SCOPE_2026-11-13.md).
+
+## Secure staff flight search demo backend (November 13, 2026)
+
+- Supabase Edge Function `nurgat-flight-research-demo` **v1 ACTIVE**, with JWT verification and a second active-reviewer membership check against `approval_reviewers` under RLS.
+- Default checked **Use secure demo backend** sends a validated flight request containing only route, dates, passenger counts, cabin and preference; it never sends optional customer/staff reference or PII.
+- Returns three **fictional** options only, with strict `FICTIONAL_DEMO_ONLY` and no-booking/no-customer-send flags. No provider, payment or n8n execution is called.
+- If the authenticated endpoint fails, the UI **fails visibly**. It does not silently invent a live search. Staff can deliberately switch off backend mode to test local fixtures.
+- Source JS syntax checked and Edge Function deployed; **authorized signed-in browser/CORS testing is still required**.
+- [Secure flight-search API contract and browser verification checklist](docs/SECURE_STAFF_FLIGHT_RESEARCH_CONTRACT_2026-11-13.md).
+- [Automated UI regression checks](scripts/test-flight-ui.mjs) via [GitHub Actions](.github/workflows/flight-research-static-ci.yml). CI workflow added; first green CI run not yet confirmed.
