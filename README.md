@@ -39,6 +39,7 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 
 - The existing signed-in Command Centre now has an **AI Flight Research** navigation tab with a staff-only demonstration form and three fictional flight comparison cards. Form fields include IATA airports, travel dates, passenger counts, cabin and search preference.
 - The interface uses **local fictitious sample data only** and performs no live GDS search, customer contact, payments, bookings or ticket issuance. It must not be used to quote customers.
+- Version 1.1 adds selectable flight cards, a selected-flight staff review panel, and a quick comparison table. Selection is **temporary, local to the page**, and cannot approve, send or issue tickets. JavaScript source passed syntax validation, but full signed-in browser testing still requires the authorized operator.
 - Actual flights, prices, baggage and fare rules remain **unverified** until the authorized Amadeus or Travelport provider API is connected and tested.
 - **Current phase:** guided staff UI demo; **next phase:** secure backend search contract, real provider integration, price verification, supplier-cost isolation, and operator approval.
 - [Revised scope: internal AI Flight Researcher](docs/AI_FLIGHT_RESEARCHER_REVISED_SCOPE_2026-11-13.md).
