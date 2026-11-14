@@ -49,6 +49,11 @@ await h.client.signIn('x','x');assert.equal((await h.client.handoff()).status,'D
 h=harness({networkFailure:true});await h.client.signIn('x','x');await assert.rejects(h.client.handoff(),/^Error: Network or test-listener failure/);assert.equal(h.calls.filter(c=>c.url===STAGING).length,1);
 h=harness({logoutFailure:true});await h.client.signIn('x','x');await assert.rejects(h.client.signOut(),/memory cleared/);await assert.rejects(h.client.handoff());
 const source=readFileSync(new URL('../src/reviewer-verification.mjs',import.meta.url),'utf8');
+for (const [code, message] of [['invalid_credentials',/Email or password was not accepted/],['email_not_confirmed',/email confirmation/],['over_request_rate_limit',/Too many/],['unexpected',/Staff sign-in was rejected/]]) {
+  const client=createVerifier(async()=>({ok:false,status:400,json:async()=>({error_code:code,message:'SECRET SERVER TEXT',access_token:'SECRET TOKEN'})}));
+  await assert.rejects(client.signIn('x','secret-password'),e=>message.test(e.message)&&!e.message.includes('SECRET')&&!e.message.includes('secret-password'));
+  await assert.rejects(client.handoff(),/Sign in personally first/);
+}
 assert(!/localStorage|sessionStorage|console\./.test(source));
 const graph=JSON.parse(readFileSync(new URL('./fixtures/original-staff-staging.json',import.meta.url),'utf8'));
 assert.equal(graph.active,false);assert.equal(graph.activeVersionId,null);

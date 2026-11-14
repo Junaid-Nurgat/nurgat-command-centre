@@ -2,6 +2,7 @@
 export const BASE = 'https://ysakhagnlmhwbbmetjjc.supabase.co';
 export const PUBLIC_KEY = 'sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
 export const STAGING = 'https://nurgattourszm.app.n8n.cloud/webhook-test/nurgat-original-reviewer-staging-v1';
+class VerificationError extends Error {}
 export function createVerifier(transport = fetch, now = () => Date.now(), uuid = () => crypto.randomUUID()) {
   let token = null, request = null, requestId = null, busy = false;
   const clear = () => { token = null; request = null; requestId = null; };
@@ -12,8 +13,23 @@ export function createVerifier(transport = fetch, now = () => Date.now(), uuid =
     let response;
     try {
       response = await transport(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(50000) });
-    } catch { throw Error('Network or test-listener failure. No automatic retry.'); }
-    if (!response.ok) throw Error('Request rejected (HTTP ' + response.status + ').');
+    } catch { throw new VerificationError('Network or test-listener failure. No automatic retry.'); }
+    if (!response.ok) {
+      // Read only the machine code; never surface raw auth responses or request data.
+      let code;
+      try { const failure = await response.json(); code = failure?.error_code ?? failure?.code; } catch {}
+      if (url === BASE + '/auth/v1/token?grant_type=password') {
+        const messages = {
+          invalid_credentials: 'Email or password was not accepted. Use your Command Centre staff login; Google, n8n and Supabase dashboard logins may be different.',
+          email_not_confirmed: 'This staff account needs email confirmation before sign-in.',
+          over_request_rate_limit: 'Too many sign-in attempts. Wait a few minutes before trying again.',
+          user_banned: 'This staff account is unavailable. Contact the account owner.',
+          email_provider_disabled: 'Email/password sign-in is disabled for this project.'
+        };
+        throw new VerificationError(messages[code] || (response.status === 429 ? messages.over_request_rate_limit : 'Staff sign-in was rejected (HTTP ' + response.status + ').'));
+      }
+      throw new VerificationError('Request rejected (HTTP ' + response.status + ').');
+    }
     try { return await response.json(); } catch { throw Error('Invalid response.'); }
   }
   async function reviewer() {
@@ -23,7 +39,7 @@ export function createVerifier(transport = fetch, now = () => Date.now(), uuid =
       if (typeof user?.id !== 'string' || user.is_anonymous === true) throw Error('Reviewer identity not verified.');
       const rows = await http(BASE + '/rest/v1/approval_reviewers?select=user_id&active=eq.true&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1', 'GET', undefined, true);
       if (!Array.isArray(rows) || rows.length !== 1 || rows[0].user_id !== user.id) throw Error('Active reviewer required.');
-    } catch { clear(); throw Error('Active reviewer verification failed. Sign in again.'); }
+    } catch { clear(); throw new VerificationError('Sign-in succeeded, but active reviewer access could not be verified. No handoff was run.'); }
   }
   return {
     async signIn(email, password) {
@@ -37,7 +53,7 @@ export function createVerifier(transport = fetch, now = () => Date.now(), uuid =
         requestId = 'ORIGINAL_STAFF_TEST_' + uuid();
         request = Object.freeze({ origin:'LUN', destination:'DXB', departureDate:new Date(now() + 30 * 86400000).toISOString().slice(0,10), returnDate:null, tripType:'ONE_WAY', adults:1, children:0, infants:0, cabin:'ECONOMY', preference:'BEST' });
         return { status:'GENUINE_REVIEWER_LOGIN_VERIFIED' };
-      } catch { clear(); throw Error('Sign-in or active reviewer check failed.'); }
+      } catch (error) { clear(); throw error instanceof VerificationError ? error : new VerificationError('Sign-in could not be completed. No handoff was run.'); }
       finally { busy = false; }
     },
     async handoff() {
