@@ -34,3 +34,20 @@ All checks were read-only. This audit did not enable production n8n, modify What
 
 ## Key correction
 The n8n handoff includes a webhook with `authentication: none` and later reviewer JWT checks in Supabase. This is **not sufficient for public production ingress** without per-request provider authentication, abuse limits, protected credential handling and a verified end-to-end route.
+
+
+## Follow-up verification — 14 November 2026
+
+**Local Node.js:** Reconstructed the exact contents of GitHub `src/handoff-contract.mjs` and `scripts/test-handoff-contract.mjs` in an isolated local directory. Both passed `node --check`; the entire handoff test script **passed on Node v22.16.0 using the real built-in `node:crypto` HMAC**:
+```
+PASS: server-side handoff schema, no-PII, stable dedupe IDs and AI2 safety contract.
+```
+This verifies the standalone handoff regression suite, **not** the original/Lite dashboard tests, browser auth, remote GitHub Actions, or live n8n HTTP integration.
+
+**GitHub CI visibility:** Commit status lookup returned no status entries and the GitHub connector's commit workflow-runs endpoint returned an empty list. The latter lists only pull-request-triggered runs; it cannot verify this push-triggered workflow. A direct public GitHub Actions/API lookup was unavailable. **Remote CI remains unverified.**
+
+**n8n controlled negative authentication attempt:** Manually submitted fictional travel data and an invalid, fabricated JWT (not a real user token) to the *unpublished draft* trigger via the n8n execution tool. It returned execution ID **121** / `started`. Retrieving its result returned `Execution '121' not found`, consistent with the configured `saveManualExecutions: false`. Therefore **this run is inconclusive**; do not claim real auth rejection from it. No customer/real JWT used.
+
+**Auth review:** n8n webhook authentication is `none` and protected only by downstream request/JWT validation, so it must not be published as a publicly callable entrypoint. A trusted, provider-verified server ingress and a test run with outcome visibility are still required. Do not enable customer sending or real GDS to test this.
+
+**Next test design:** Use a dedicated **isolated** staging workflow with (1) fictional input only, (2) explicit outcome output visible from the test executor, (3) authorization denial checks without exposing credentials, and (4) no published public endpoint. For authenticated positive tests, use the approved business test account and the platform's secret management; never paste JWTs into GitHub/chat.
