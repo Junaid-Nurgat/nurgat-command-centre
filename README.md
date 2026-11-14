@@ -107,3 +107,6 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Strengthened `claim_ai_handoff` database validation (date/calendar/18-month window, passengers, one-way/round-trip, strict allowlist). Direct transaction tests confirmed expected acceptance/rejection and were rolled back with no test records remaining.
 - [Evidence, limits and next integration requirements](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md).
 - AI1→AI2 handoff remains **unpublished** pending real authenticated ingress, rate-limit/abuse protections, security review and external end-to-end verification. Neither WhatsApp nor real GDS integration has been activated.
+
+## Future WhatsApp ingress test contract
+- [Server-side request validator, opaque event ID generation and offline tests](docs/AI1_PROVIDER_INGRESS_CONTRACT_2026-11-14.md) added. **Not deployed or integrated with WhatsApp.** CI includes `node scripts/test-handoff-contract.mjs`; green remote run not yet confirmed.
