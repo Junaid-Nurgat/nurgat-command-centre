@@ -102,3 +102,8 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - See [detailed evidence and open security gates](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md). **Not published or integrated with WhatsApp.** Authenticated end-to-end, concurrent requests, rate limiting, provider permissions and API test remain outstanding.
 
 - **Lease-fenced retry hardening complete (14 Nov):** 10-node handoff, SHA-256 request fingerprint, 2-minute lease, max 3 processing attempts, and a matching per-attempt completion token. n8n simulations 112–119 passed expected outcomes; transactional SQL tests of duplicate, conflict, stale-token and retry-limit behavior passed and were rolled back. Still unpublished pending ingress/E2E security approval.
+
+## Pre-API security checkpoint — 14 November 2026
+- Strengthened `claim_ai_handoff` database validation (date/calendar/18-month window, passengers, one-way/round-trip, strict allowlist). Direct transaction tests confirmed expected acceptance/rejection and were rolled back with no test records remaining.
+- [Evidence, limits and next integration requirements](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md).
+- AI1→AI2 handoff remains **unpublished** pending real authenticated ingress, rate-limit/abuse protections, security review and external end-to-end verification. Neither WhatsApp nor real GDS integration has been activated.
