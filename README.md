@@ -115,3 +115,11 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - [Read the CI and authorization findings](docs/MISSION1_CI_AUTH_AUDIT_2026-11-14.md). All three GitHub Actions tests are configured but a green remote run is **not yet verified**.
 - Database RLS and restricted RPC grants were independently checked. Two public-schema `SECURITY DEFINER` functions still need security review and live authenticated testing.
 - The 10-node AI-to-AI n8n handoff remains **unpublished**; no customer-facing operations are active.
+
+
+## Staff login check (GitHub Pages staging, 14 Nov 2026)
+- New isolated test page: [staff-login-check.html](staff-login-check.html) — expected Pages URL: `https://junaid-nurgat.github.io/nurgat-command-centre/staff-login-check.html`.
+- This page uses the **existing Supabase Auth account** and asks the user to enter credentials only into their own browser. It checks `/auth/v1/user` and read-only reviewer membership. The optional protected RPC test sends `p_request_id: "INVALID"` and an empty JSON payload, which must be rejected before any database write. It never calls n8n or WhatsApp.
+- Browser access token is kept only in JS memory (not `localStorage`, `sessionStorage`, ChatGPT or GitHub), cleared on sign-out/page close. The static webpage source is **public** on GitHub Pages, not a private login server.
+- Added `scripts/test-staff-login-check.mjs` and configured CI to run it with the existing three test scripts.
+- **Availability status:** Source committed to GitHub; Pages deployment and successful live sign-in have **not yet been verified externally**. Do not claim actual user authentication or end-to-end AI handoff passed from the page's existence alone.
