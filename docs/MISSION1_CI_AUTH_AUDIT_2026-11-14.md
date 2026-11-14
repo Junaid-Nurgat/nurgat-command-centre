@@ -62,3 +62,17 @@ This verifies the standalone handoff regression suite, **not** the original/Lite
 - These are **pre-production test harness results**. Do not publish staging or production workflows or claim end-to-end auth has passed.
 
 **Next: authorized real login and JWT bearer verification through Supabase REST and the exact n8n request path, with safe test account and redacted logs. This is a mandatory release gate.**
+
+
+## Real HTTP anonymous authorization probe — 14 November 2026 (n8n execution 123)
+- Created manual-only **unpublished** staging workflow `uQ84RoQzxRycLBC4`, [open in n8n](https://nurgattourszm.app.n8n.cloud/workflow/uQ84RoQzxRycLBC4) in personal project `QAMemlGB8a2W38dU`.
+- Trigger: manual; sends fictional travel requirements and a synthetic request ID to Supabase PostgREST `/rest/v1/rpc/claim_ai_handoff` with the existing **public publishable** API key, **no bearer JWT**.
+- The third node checks the actual HTTP response, requires **401 or 403**, and strips response/body content from its output.
+- Executed manually: **n8n execution 123**, **success**. Captured final outcome: `ANONYMOUS_RPC_REJECTED`, **HTTP 401**, `realSignedTokenVerified:false`, `liveReviewerVerified:false`, `customerSendAllowed:false`.
+- Supabase response indicates `permission denied for function claim_ai_handoff`; a direct SQL check verified **zero matching database rows** were created.
+- Staging workflow and the original ten-node AI 1→AI 2 workflow are both verified **unpublished**.
+- No real reviewer credential, customer data, WhatsApp messages, GDS calls, bookings or ticketing used.
+
+**Interpretation:** Real n8n→Supabase **unauthenticated denial works**. This is not proof of successful authenticated access, correct token signature validation, reviewer RLS under real JWT, public ingress protection, or full end-to-end operation.
+
+**Remaining release blocker:** Ask the business owner to authorize a dedicated test reviewer account and trusted server-side credential provisioning. Use a secure method without sending passwords, session JWTs or service keys through GitHub or chat. Production credentials in n8n nodes must use managed credentials; the probe's literal key is a publishable public key and not suitable as a pattern for secrets.
