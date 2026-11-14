@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'staff-login-check.html'
+      - 'scripts/test-staff-login-check.mjs'
       - 'lite.html'
       - 'scripts/test-lite-ui.mjs'
       - 'scripts/test-handoff-contract.mjs'
@@ -23,4 +25,5 @@ jobs:
         run: |
           node scripts/test-flight-ui.mjs
           node scripts/test-lite-ui.mjs
+          node scripts/test-staff-login-check.mjs
           node scripts/test-handoff-contract.mjs
