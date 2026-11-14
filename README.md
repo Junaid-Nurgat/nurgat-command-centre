@@ -3,6 +3,7 @@
 Private source repository for the Nurgat Tours internal CEO quotation approval dashboard.
 
 ## Current status
+- **Original-account approval received:** [controlled reviewer verification and personal sign-in steps](docs/ORIGINAL_STAFF_VERIFICATION_2026-11-14.md). Separate staging workflow prepared; main handoff stays unpublished. Genuine login/E2E is still pending Uncle signing in himself.
 - AI-connected dashboard uploaded to `index.html` on `main`.
 - **Demo hosted on GitHub Pages** at https://junaid-nurgat.github.io/nurgat-command-centre/ (user confirmed it loads; authenticated flows require separate browser verification). **Not approved as the production commercial operations host.**
 - Backend: Supabase authentication, row-level-security quotation approval, and CEO special-request tables.
