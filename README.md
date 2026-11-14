@@ -94,3 +94,9 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 ## GDS API meeting preparation
 - [API meeting readiness pack](docs/GDS_API_MEETING_READINESS_PACK_2026-11-13.md) covers provider licensing/entitlements, sandbox access, permitted operations, fare rules, agency approval, WhatsApp ownership, security and next actions.
 - AI1→AI2 n8n simulated workflow tests: valid dry-run succeeded (execution 99); invalid personal-data/missing-JWT/unsafe-output cases rejected (100–102). Workflow remains **unpublished** pending live authenticated end-to-end tests and replay controls.
+
+## Day 2 AI handoff reliability (14 November 2026)
+- Created a reviewer-scoped **atomic request-id claim/completion store** in Supabase (`public.ai_handoff_dedupe`) with RLS and no direct client table access.
+- Updated unpublished n8n AI1→AI2 handoff to **9 nodes**: validate immutable request ID, check atomic claim, stop duplicate/conflicting requests before AI2, persist completion for safe future retries.
+- **Eight n8n pinned simulation runs (104–111):** four valid/duplicate/conflict branches completed; four unsafe or failed-completion cases rejected.
+- See [detailed evidence and open security gates](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md). **Not published or integrated with WhatsApp.** Authenticated end-to-end, concurrent requests, rate limiting, provider permissions and API test remain outstanding.
