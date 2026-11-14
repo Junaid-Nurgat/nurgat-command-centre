@@ -51,3 +51,14 @@ This verifies the standalone handoff regression suite, **not** the original/Lite
 **Auth review:** n8n webhook authentication is `none` and protected only by downstream request/JWT validation, so it must not be published as a publicly callable entrypoint. A trusted, provider-verified server ingress and a test run with outcome visibility are still required. Do not enable customer sending or real GDS to test this.
 
 **Next test design:** Use a dedicated **isolated** staging workflow with (1) fictional input only, (2) explicit outcome output visible from the test executor, (3) authorization denial checks without exposing credentials, and (4) no published public endpoint. For authenticated positive tests, use the approved business test account and the platform's secret management; never paste JWTs into GitHub/chat.
+
+
+## Isolated n8n staging verification — 14 November 2026
+- **Created unpublished** 3-node n8n workflow `gThD3QJgZM3yUfaM`, **Nurgat Tours — Isolated Authentication Contract Tests (NO LIVE IO)**. Project: `Junaid nurgat <nurgattourszm@gmail.com>`, personal project `QAMemlGB8a2W38dU`.
+- Workflow has **manual trigger → four synthetic auth-shape cases → safety assertions**, with **no HTTP requests, webhook trigger, secrets, AI calls, customer messages, provider access, or GDS calls**.
+- n8n `test_workflow` with pinned manual trigger returned `success`, execution **122**; logic nodes executed normally.
+- Synthetic cases: missing JWT denied, malformed JWT denied, inactive simulated reviewer denied, correct-looking JWT with active simulated reviewer **NOT authenticated** (reported `SHAPE_ONLY_NOT_AUTHENTICATED`, never claimed live authorization).
+- Direct Supabase SQL transaction (rolled back): both **no identity** and **non-reviewer identity** calls to `claim_ai_handoff` were rejected, checked by assertions inside one transaction. This did not validate real signed tokens or API HTTP permissions.
+- These are **pre-production test harness results**. Do not publish staging or production workflows or claim end-to-end auth has passed.
+
+**Next: authorized real login and JWT bearer verification through Supabase REST and the exact n8n request path, with safe test account and redacted logs. This is a mandatory release gate.**
