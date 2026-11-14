@@ -108,3 +108,36 @@ n8n `Ovchtd30RvioSeL7` expanded from four to **nine nodes**:
 ```
 **Important:** This is a *test contract*, not a proposal to embed staff JWTs in WhatsApp messages. A production WhatsApp agent should authenticate server-to-server to a trusted ingress which assigns and verifies the agency identity, manages credentials, derives a stable WhatsApp event ID and sends the minimized request onward. The browser/AI prompt must not contain credentials or staff JWTs.
 
+
+
+## Day 2 security hardening — lease ownership and direct database verification
+
+**Implemented:**
+- Added `lease_token uuid` and `attempt_count` to the reviewer-scoped deduplication store.
+- Strengthened payload fingerprinting to SHA-256 (instead of MD5) and fixed the date-pattern issue in the database validation.
+- Each fresh claim or retry receives a **different lease token**.
+- `complete_ai_handoff` now requires `p_request_id` **and the matching `p_lease_token`**, so an old attempt cannot mark a newer retry complete.
+- Max **three** attempts per request ID. Additional retry requests return `RETRY_LIMIT_REACHED` and require staff investigation.
+- Updated the unpublished n8n workflow to **10 nodes**, including a lease-token check before AI2 and a completion call bound to the lease token.
+
+**n8n simulation executions (112–119):**
+- 112: new claim + valid lease + safe plan + completed write → success
+- 113–114: already complete / in progress → duplicate response without AI2
+- 115: conflicting ID → conflict response without AI2
+- 116: retry limit reached → blocked response without AI2
+- 117: missing/invalid lease → expected failure
+- 118: unsafe AI output → expected failure
+- 119: completion RPC returns false → expected failure
+
+**Direct Supabase SQL transaction assertions (all rolled back):**
+1. Fresh claim returns `PROCESS` plus a new lease token.
+2. Duplicate while running returns `DUPLICATE_IN_PROGRESS`.
+3. Same ID with modified route returns `CONFLICT`.
+4. Completion with wrong token is rejected, correct token succeeds.
+5. After completion the duplicate returns `DUPLICATE_COMPLETED`.
+6. Forced stale lease permits retry and rotates token.
+7. Older token cannot complete the newer lease.
+8. Third attempt is last; fourth claim yields `RETRY_LIMIT_REACHED`.
+9. A post-test query confirmed zero persisted test rows.
+
+**Scope and remaining risks:** Tests directly exercised the database functions using a transaction-scoped simulated reviewer identity; they did **not** authenticate through the real external Supabase REST or live n8n HTTP call, and did not test concurrent cross-worker timing. We still need rate limiting, verified server-to-server ingress, production credential management, documented incident retry policy, and external-service E2E testing. Elevated `SECURITY DEFINER` functions remain subject to the security advisor warning (reviewer checks are present). The n8n workflow remains **unpublished**. No WhatsApp/GDS/customer messages were triggered.
