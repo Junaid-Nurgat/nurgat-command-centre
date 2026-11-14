@@ -110,3 +110,8 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 
 ## Future WhatsApp ingress test contract
 - [Server-side request validator, opaque event ID generation and offline tests](docs/AI1_PROVIDER_INGRESS_CONTRACT_2026-11-14.md) added. **Not deployed or integrated with WhatsApp.** CI includes `node scripts/test-handoff-contract.mjs`; green remote run not yet confirmed.
+
+## Mission 1 — CI and authentication readiness audit (14 Nov 2026)
+- [Read the CI and authorization findings](docs/MISSION1_CI_AUTH_AUDIT_2026-11-14.md). All three GitHub Actions tests are configured but a green remote run is **not yet verified**.
+- Database RLS and restricted RPC grants were independently checked. Two public-schema `SECURITY DEFINER` functions still need security review and live authenticated testing.
+- The 10-node AI-to-AI n8n handoff remains **unpublished**; no customer-facing operations are active.
