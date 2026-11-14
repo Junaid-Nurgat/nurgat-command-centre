@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-const html=fs.readFileSync(new URL('../lite.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const match=html.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match,'Lite application script exists');
 assert.doesNotThrow(()=>new Function(match[1]),'Lite JavaScript compiles');

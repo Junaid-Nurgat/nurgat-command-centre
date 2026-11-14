@@ -3,7 +3,7 @@
 Private source repository for the Nurgat Tours internal CEO quotation approval dashboard.
 
 ## Current status
-- AI-connected dashboard uploaded to `index.html` on `main`.
+- Command Centre Lite is the main dashboard in `index.html` on `main`.
 - **Demo hosted on GitHub Pages** at https://junaid-nurgat.github.io/nurgat-command-centre/ (user confirmed it loads; authenticated flows require separate browser verification). **Not approved as the production commercial operations host.**
 - Backend: Supabase authentication, row-level-security quotation approval, and CEO special-request tables.
 - AI: n8n-generated CEO-only draft proposals through a Supabase Edge Function.
@@ -80,11 +80,11 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - The interface lists the exact remaining release gates: licensed GDS, verified fare/rules/expiry, owner-approved markup, staff approval, approved delivery channel and auditable status tracking.
 - [Customer quote workflow and production handoff contract](docs/CUSTOMER_QUOTATION_HANDOFF_2026-11-13.md).
 
-## Command Centre Lite — separate phone-first version
-- **[Launch Lite](https://junaid-nurgat.github.io/nurgat-command-centre/lite.html)** — a simple mobile-first interface with Search, Flights, Quote, and AI tools.
-- **[Launch original](https://junaid-nurgat.github.io/nurgat-command-centre/)** — the existing dashboard remains unchanged. Lite is maintained in `lite.html`, separate from `index.html`.
-- Same authorized reviewer login and existing secure demo APIs. All prices are fictional, AI cannot view confidential supplier pricing, and customer delivery is disabled.
-- [Lite design, safeguards and mobile test checklist](docs/COMMAND_CENTRE_LITE_2026-11-13.md).
+## Command Centre Lite — main interface
+- **[Launch Command Centre Lite](https://junaid-nurgat.github.io/nurgat-command-centre/)** — the main interface now uses the simpler Search, Flights, Quote and AI tools screens.
+- Lite lives in `index.html`; the previous `lite.html` address redirects to the main page. The original dashboard has been removed from the served site; previous source remains in Git history.
+- Existing reviewer login and secure demo APIs are retained. Prices remain fictional and customer delivery is disabled.
+- Earlier dashboard-specific notes below and above describe historical implementation; current UI is Lite.
 
 ## AI 1 → AI 2 handoff work
 - New [internal n8n AI-to-AI handoff workflow](https://nurgattourszm.app.n8n.cloud/workflow/Ovchtd30RvioSeL7) created; **unpublished** pending E2E authorization and ingress hardening.
