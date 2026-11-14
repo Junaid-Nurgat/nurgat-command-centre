@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>Nurgat Tours — Staff Login Check</title>
+<style>
+:root{color-scheme:light;--ink:#12353b;--teal:#116b65;--muted:#60777d;--line:#d7e5e3;--bg:#f4f8f8;--white:#fff;--red:#9b3434}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:700px;padding:28px 18px 60px;margin:auto}
+header{margin-bottom:24px}h1{font-size:clamp(24px,5vw,34px);line-height:1.15;margin:6px 0 8px}h2{font-size:19px;margin:0 0 12px}
+p{margin:9px 0}small,.muted{color:var(--muted)}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--teal)}
+section{background:var(--white);padding:22px;border:1px solid var(--line);border-radius:16px;margin:16px 0}
+label{display:block;font-weight:650;margin:14px 0 5px}input{display:block;width:100%;font:inherit;border:1px solid #a7c0be;padding:12px;border-radius:10px;background:white}
+button,a.button{font:inherit;border:0;background:var(--teal);color:white;padding:12px 16px;border-radius:10px;cursor:pointer;display:inline-block;text-decoration:none;margin:12px 10px 0 0}button:disabled{opacity:.55;cursor:wait}button.secondary{background:#e1eceb;color:var(--ink)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #e8a743;outline-offset:2px}.hidden{display:none}.status{border-left:4px solid #a7c0be;padding:10px 12px;background:#f5f8f8;border-radius:6px;min-height:42px;overflow-wrap:anywhere}
+.status.error{border-color:var(--red);color:var(--red)}.status.success{border-color:var(--teal);color:#145c4e}
+ol{padding-left:22px}li{margin:8px 0}.tag{font-size:12px;font-weight:700;color:#2d6562}
+</style></head>
+<body><main><header><div class="eyebrow">NURGAT TOURS • CONTROLLED TEST</div><h1>Staff account check</h1><p class="muted">Use your existing Command Centre account. This is a limited security test, not a flight booking service.</p></header>
+<section><h2>Before signing in</h2><p>Only use this page if you have the business owner's permission. Make sure the address starts with <strong>junaid-nurgat.github.io/nurgat-command-centre/</strong>.</p><p><strong>No flight requests, WhatsApp messages, bookings or payments will be made.</strong></p><small>The webpage source is public on GitHub Pages. Your password goes directly from this browser to Supabase Auth, not to GitHub or ChatGPT. Do not share screenshots showing passwords, codes or tokens.</small></section>
+<section id="signInCard"><h2>Step 1 — Sign in</h2><form id="loginForm" autocomplete="on"><label for="email">Staff email</label><input id="email" name="email" type="email" autocomplete="username" required maxlength="254"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required><button id="signIn" type="submit">Sign in and check permission</button></form><p id="loginResult" class="status" role="status" aria-live="polite">Not signed in.</p></section>
+<section id="results" class="hidden"><h2>Step 2 — Verify staff access</h2><p id="userResult" class="status" role="status">Account check not run.</p><p id="reviewResult" class="status" role="status">Reviewer permission not checked.</p><button id="recheck" class="secondary" type="button">Recheck account</button><h2>Step 3 — Protected endpoint check</h2><p>Optional: safely test whether your authorized account can reach the protected database function. It sends an intentionally invalid test ID, so it <strong>cannot create or complete a flight request</strong>.</p><button id="endpointCheck" type="button" disabled>Test protected endpoint (no changes)</button><p id="rpcResult" class="status" role="status">Not tested.</p><button id="signOut" class="secondary" type="button">Sign out and clear session</button></section>
+<section><h2>What to report back</h2><ol><li>Whether sign-in succeeded.</li><li>Whether the page says <strong>Active reviewer: YES</strong>.</li><li>Whether the protected endpoint check passed.</li></ol><p class="muted">Never copy passwords, security codes, access tokens, or raw error details into a chat. This is <strong>not</strong> an end-to-end n8n test.</p></section>
+</main>
+<script>
+'use strict';
+const BASE='https://ysakhagnlmhwbbmetjjc.supabase.co';
+const API_KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
+const byId=id=>document.getElementById(id);
+let session=null,reviewer=false,busy=false;
+const setStatus=(id,text,kind='')=>{const el=byId(id);el.textContent=text;el.className='status'+(kind?' '+kind:'')};
+function reset(){session=null;reviewer=false;byId('password').value='';byId('results').classList.add('hidden');byId('signInCard').classList.remove('hidden');byId('endpointCheck').disabled=true}
+async function api(path,{method='GET',body=null,authenticated=false}={}){
+ const headers={apikey:API_KEY};
+ if(body!==null)headers['content-type']='application/json';
+ if(authenticated){if(!session?.access_token)throw Error('Please sign in again');headers.authorization='Bearer '+session.access_token}
+ const response=await fetch(BASE+path,{method,headers,body:body===null?undefined:JSON.stringify(body),cache:'no-store',referrerPolicy:'no-referrer',credentials:'omit'});
+ const data=await response.json().catch(()=>null);
+ return {status:response.status,ok:response.ok,data};
+}
+async function guard(fn){if(busy)return;busy=true;const buttons=[byId('signIn'),byId('recheck'),byId('endpointCheck')];buttons.forEach(b=>b.disabled=true);
+ try{await fn()}catch(e){setStatus('loginResult','Unable to complete the check. Check your connection and try again.','error')}
+ finally{busy=false;byId('signIn').disabled=false;byId('recheck').disabled=false;byId('endpointCheck').disabled=!reviewer}}
+async function verifyAccount(){
+ reviewer=false;byId('endpointCheck').disabled=true;
+ setStatus('userResult','Checking signed-in account...');
+ const user=await api('/auth/v1/user',{authenticated:true});
+ if(!user.ok||!user.data?.id){setStatus('userResult','Session could not be verified. Please sign out and sign in again.','error');setStatus('reviewResult','No permission checked.');return}
+ setStatus('userResult','Signed-in account verified by Supabase Auth.','success');
+ const membership=await api('/rest/v1/approval_reviewers?select=user_id&active=eq.true&user_id=eq.'+encodeURIComponent(user.data.id)+'&limit=1',{authenticated:true});
+ if(!membership.ok){setStatus('reviewResult','Unable to verify staff permission. Ask the administrator to check access.','error');return}
+ reviewer=Array.isArray(membership.data)&&membership.data.length===1;
+ setStatus('reviewResult',reviewer?'Active reviewer: YES. You may run the read-only endpoint check.':'Active reviewer: NO. Stop testing and ask the administrator. ',reviewer?'success':'error');
+}
+byId('loginForm').addEventListener('submit',e=>{e.preventDefault();guard(async()=>{
+ setStatus('loginResult','Signing in...');
+ const email=byId('email').value.trim(),password=byId('password').value;
+ const result=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password}});
+ byId('password').value='';
+ if(!result.ok||!result.data?.access_token){setStatus('loginResult','Sign-in failed. Confirm the account details or contact the administrator.','error');return}
+ session={access_token:result.data.access_token,refresh_token:result.data.refresh_token};
+ byId('signInCard').classList.add('hidden');byId('results').classList.remove('hidden');
+ await verifyAccount();
+})});
+byId('recheck').addEventListener('click',()=>guard(verifyAccount));
+byId('endpointCheck').addEventListener('click',()=>guard(async()=>{
+ if(!reviewer){setStatus('rpcResult','Reviewer permission required.','error');return}
+ setStatus('rpcResult','Checking protected database endpoint...');
+ // Deliberately invalid request ID; the function rejects it before any database INSERT.
+ const response=await api('/rest/v1/rpc/claim_ai_handoff',{method:'POST',authenticated:true,body:{p_request_id:'INVALID',p_payload:{}}});
+ const message=typeof response.data?.message==='string'?response.data.message:'';
+ if(response.status===400&&/invalid request id/i.test(message)){setStatus('rpcResult','PASS: signed-in reviewer reached the protected endpoint; invalid test ID was safely rejected. No request created.','success')}
+ else if(response.status===401||response.status===403){setStatus('rpcResult','DENIED: this session cannot use the protected endpoint. Ask the administrator.','error')}
+ else{setStatus('rpcResult','Result not verified. Do not proceed with further testing. Status: '+String(response.status), 'error')}
+}));
+byId('signOut').addEventListener('click',async()=>{
+ const old=session;reset();setStatus('loginResult','Signed out. The page no longer holds your session.','success');
+ if(old?.access_token){try{await fetch(BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,authorization:'Bearer '+old.access_token},cache:'no-store',credentials:'omit'})}catch{}}
+});
+window.addEventListener('pagehide',()=>{session=null;reviewer=false});
+</script></body></html>
