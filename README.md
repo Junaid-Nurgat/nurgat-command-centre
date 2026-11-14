@@ -100,3 +100,5 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Updated unpublished n8n AI1→AI2 handoff to **9 nodes**: validate immutable request ID, check atomic claim, stop duplicate/conflicting requests before AI2, persist completion for safe future retries.
 - **Eight n8n pinned simulation runs (104–111):** four valid/duplicate/conflict branches completed; four unsafe or failed-completion cases rejected.
 - See [detailed evidence and open security gates](docs/AI1_AI2_HANDOFF_DEMO_2026-11-13.md). **Not published or integrated with WhatsApp.** Authenticated end-to-end, concurrent requests, rate limiting, provider permissions and API test remain outstanding.
+
+- **Lease-fenced retry hardening complete (14 Nov):** 10-node handoff, SHA-256 request fingerprint, 2-minute lease, max 3 processing attempts, and a matching per-attempt completion token. n8n simulations 112–119 passed expected outcomes; transactional SQL tests of duplicate, conflict, stale-token and retry-limit behavior passed and were rolled back. Still unpublished pending ingress/E2E security approval.
