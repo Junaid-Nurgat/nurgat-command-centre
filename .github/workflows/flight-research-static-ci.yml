@@ -1,6 +1,7 @@
 name: Flight Research Dashboard Static Tests
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches: [main]
     paths:
@@ -9,6 +10,11 @@ on:
       - 'scripts/test-lite-ui.mjs'
       - 'scripts/test-handoff-contract.mjs'
       - 'src/handoff-contract.mjs'
+      - 'reviewer-verification.html'
+      - 'src/reviewer-verification.mjs'
+      - 'scripts/test-reviewer-verification.mjs'
+      - 'scripts/serve-reviewer-verification.mjs'
+      - 'scripts/fixtures/original-staff-staging.json'
       - 'scripts/test-flight-ui.mjs'
       - '.github/workflows/flight-research-static-ci.yml'
 permissions:
@@ -24,3 +30,4 @@ jobs:
           node scripts/test-flight-ui.mjs
           node scripts/test-lite-ui.mjs
           node scripts/test-handoff-contract.mjs
+          node scripts/test-reviewer-verification.mjs

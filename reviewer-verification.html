@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Nurgat Tours — controlled staff verification</title>
+<style>body{font:18px system-ui;max-width:700px;margin:50px auto;padding:20px;background:#f4f7fa;color:#182b40}label{display:block;margin:16px 0}input,button{font:inherit;padding:12px;box-sizing:border-box}input{display:block;width:100%}button{margin:8px 6px 8px 0}output{display:block;white-space:pre-wrap;padding:20px;background:white}small{line-height:1.6}</style>
+<h1>Original staff account verification</h1>
+<p>Uncle signs in personally. This page uses a separate, unpublished rehearsal workflow with one fictional LUN → DXB request. No customer messages, GDS search, booking, payment or ticketing.</p>
+<p>Keep this page private. Do not share passwords, tokens, network captures or n8n node-data screenshots.</p>
+<p>Use your <strong>Command Centre staff email and password</strong>. Your Google, n8n or Supabase dashboard login may be different.</p>
+<form id="login"><label>Email<input id="email" type="email" autocomplete="username" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><button>Sign in and verify reviewer</button></form>
+<button id="handoff" disabled>Run fictional handoff</button><button id="logout" disabled>Sign out</button>
+<p><small>Before each handoff click, an operator must select “Listen for test event” on the staging workflow's webhook. Do not publish it. A second click reuses the same request ID to check duplicate protection. The first handoff can use AI credits.</small></p>
+<output id="result">Not signed in. Genuine login and handoff are not yet verified.</output>
+<script type="module">
+import { createVerifier } from './src/reviewer-verification.mjs';
+const ui = id => document.getElementById(id);
+const verifier = createVerifier();
+let authenticated = false;
+async function run(action) {
+  document.querySelectorAll('button').forEach(b => b.disabled = true);
+  try { ui('result').textContent = JSON.stringify(await action(), null, 2); }
+  catch (e) { ui('result').textContent = e.message; }
+  finally { document.querySelectorAll('button').forEach(b => b.disabled = false); ui('handoff').disabled = !authenticated; ui('logout').disabled = !authenticated; }
+}
+ui('login').onsubmit = e => { e.preventDefault(); const email=ui('email').value.trim(), password=ui('password').value; ui('password').value=''; authenticated=false; run(async()=>{ const r=await verifier.signIn(email,password); authenticated=true; return r; }); };
+ui('handoff').onclick = () => run(() => verifier.handoff());
+ui('logout').onclick = () => run(async()=>{ try{return await verifier.signOut();}finally{authenticated=false;ui('password').value='';ui('email').value='';} });
+if (location.origin !== 'http://127.0.0.1:8765') { document.querySelectorAll('button').forEach(b=>b.disabled=true); ui('result').textContent='Use the local verification server at http://127.0.0.1:8765. This page is not enabled on the public demo site.'; }
+</script></html>

@@ -2,6 +2,8 @@
 **Date:** 14 November 2026
 **Status:** Verification in progress; workflow remains unpublished.
 
+**Update:** Original staff account use is approved. Recommendations below to request a separate test account are superseded by [the controlled original-account verification procedure](ORIGINAL_STAFF_VERIFICATION_2026-11-14.md). Fresh personal sign-in remains necessary; approval alone is not an authentication test.
+
 ## Scope inspected
 - GitHub Actions: `.github/workflows/flight-research-static-ci.yml`
 - Original app static suite: `scripts/test-flight-ui.mjs`
