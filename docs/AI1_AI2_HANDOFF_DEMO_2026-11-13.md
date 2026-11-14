@@ -44,3 +44,67 @@ Status: **Created in n8n, UNPUBLISHED for safety and E2E testing.** Date: 2026-1
 
 ## Important distinction
 The new n8n flow is a **real automatic inter-workflow transfer** for structured internal research planning once safely activated; it is **not yet** the promised end-to-end automatic WhatsApp → real GDS → quotation → customer messaging product.
+
+
+## Day 2 — Durable request deduplication and execution tests (14 November 2026)
+
+A new isolated table `public.ai_handoff_dedupe` stores:
+- Agency reviewer ID, **stable request ID**, MD5 fingerprint of a validated travel-only payload
+- State (`PROCESSING` or `COMPLETED`), lease and completion timestamps
+- **No customer identity, WhatsApp messages, flight supplier costs or JWT tokens**
+
+New RPCs:
+- `claim_ai_handoff(p_request_id text,p_payload jsonb)` — atomic reviewer-scoped claim.
+- `complete_ai_handoff(p_request_id text)` — mark a successful internal plan handoff complete.
+- Both require an authenticated JWT and the account to exist as an **active reviewer**; direct table grants were revoked from `anon` and `authenticated`, and RLS is enabled.
+- Reused ID with identical payload: `DUPLICATE_IN_PROGRESS` (if within 2-minute lease) or `DUPLICATE_COMPLETED`. **No repeat AI2 call.**
+- Reused ID with different payload fingerprint: `CONFLICT`. **No AI2 call.**
+- Failed/incomplete attempt can be reclaimed after 2 minutes; completion state prevents repeat processing. This is a demo lease, not a production distributed lock guarantee without concurrent tests.
+
+n8n `Ovchtd30RvioSeL7` expanded from four to **nine nodes**:
+`Webhook → Strict input allowlist → Supabase atomic claim → IF`
+- `PROCESS` branch → AI2 planner → read-only safety gate → mark complete → final safe response.
+- Duplicate/conflict branch → status response, **without contacting AI2**.
+- Stable `requestId` (12–64 alphanumeric, underscore, or hyphen characters) is now mandatory with `jwt` and `request`.
+
+**n8n pinned simulation results:**
+| Case | Execution | Outcome |
+|---|---:|---|
+| New structured request | 104 | Success |
+| Already completed | 105 | Success; stopped without AI2 |
+| Duplicate in progress | 106 | Success; stopped without AI2 |
+| Conflicting ID and payload | 107 | Success; conflict response without AI2 |
+| Added customer email (PII) | 108 | Expected validation error |
+| Missing request ID | 109 | Expected validation error |
+| AI2 claims customer sending is enabled | 110 | Expected safety error |
+| Completion persistence returns false | 111 | Expected error |
+
+**Verification and security caveats:**
+- This tested actual n8n logic nodes using pinned **simulated** HTTP results. It did **not** test real JWT verification, real PostgREST RPC calls, concurrency, lease refresh, or real AI2 output. Do not equate these tests with a production-ready integration.
+- Supabase table RLS was verified on, direct `anon` and `authenticated` table read and insert grants verified off. RPC execute grants are limited to `authenticated`.
+- The Supabase security advisor warns that two `SECURITY DEFINER` functions in `public` are executable by authenticated users. We intentionally included `auth.uid()` and active reviewer checks with restricted function grants, but **the warning remains open** for final architecture/security review. Preferred future migration: trusted Edge Function or private schema function with tighter server-only access.
+- n8n validator warns that the **publishable** Supabase `apikey` header is statically configured in the two new HTTP nodes. It is a public browser key, not a service-role secret; move it to managed credentials/config before publishing.
+- Existing older Supabase security advisor findings outside this feature were not changed.
+- Workflow stays **unpublished** pending authenticated E2E, replay/concurrency/rate-limit tests, and approval for WhatsApp integration. No customer messages, GDS searches, bookings or payments.
+
+**Idempotency handoff contract (for future authorized AI1):**
+```json
+{
+  "requestId": "wa_event_20261114_abc001",
+  "jwt": "<server-authorized-reviewer-session>",
+  "request": {
+    "origin": "LUN",
+    "destination": "DXB",
+    "departureDate": "2026-12-15",
+    "returnDate": null,
+    "tripType": "ONE_WAY",
+    "adults": 1,
+    "children": 0,
+    "infants": 0,
+    "cabin": "ECONOMY",
+    "preference": "BEST"
+  }
+}
+```
+**Important:** This is a *test contract*, not a proposal to embed staff JWTs in WhatsApp messages. A production WhatsApp agent should authenticate server-to-server to a trusted ingress which assigns and verifies the agency identity, manages credentials, derives a stable WhatsApp event ID and sends the minimized request onward. The browser/AI prompt must not contain credentials or staff JWTs.
+
