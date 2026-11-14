@@ -141,3 +141,19 @@ n8n `Ovchtd30RvioSeL7` expanded from four to **nine nodes**:
 9. A post-test query confirmed zero persisted test rows.
 
 **Scope and remaining risks:** Tests directly exercised the database functions using a transaction-scoped simulated reviewer identity; they did **not** authenticate through the real external Supabase REST or live n8n HTTP call, and did not test concurrent cross-worker timing. We still need rate limiting, verified server-to-server ingress, production credential management, documented incident retry policy, and external-service E2E testing. Elevated `SECURITY DEFINER` functions remain subject to the security advisor warning (reviewer checks are present). The n8n workflow remains **unpublished**. No WhatsApp/GDS/customer messages were triggered.
+
+
+## Pre-API readiness hardening — 14 November 2026
+
+**New database defense-in-depth:** The reviewer-scoped `claim_ai_handoff` RPC now independently validates the exact structured travel payload, including passenger number types/counts, legitimate future calendar dates within 18 months, one-way versus round-trip return rules, cabin/preference options, and rejection of unexpected fields. These checks supplement—not replace—the existing n8n validation.
+
+**Direct transactional SQL tests (rolled back):**
+- A valid one-way request is accepted; an immediate duplicate is recognized.
+- Invalid adults/infants, invalid/past departure, one-way request with unexpected return, and customer PII field are rejected.
+- Invalid calendar day (November 31), fractional passenger count, and departure outside the supported window are rejected.
+- A valid round-trip request is accepted.
+- Confirmed `public.ai_handoff_dedupe` contains **zero** test rows after rollbacks.
+
+**Outstanding production gates:** The n8n handoff remains **unpublished**. Authenticated external REST/JWT tests, rate limiting at trusted ingress, webhook authentication, production credential management, concurrent worker tests, security advisor review of the two SECURITY DEFINER RPCs, live messaging integration authorization, and licensed GDS API access are pending. Customer sending, booking and ticketing remain disabled.
+
+**Safety rule:** Don't claim that the workflow can automatically receive WhatsApp requests yet. The 10-node unpublished n8n handoff is currently a tested internal demonstration only.
