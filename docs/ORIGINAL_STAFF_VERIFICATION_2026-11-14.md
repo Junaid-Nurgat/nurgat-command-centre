@@ -11,8 +11,9 @@ The owner approved use of the original account. This supersedes earlier recommen
 - All seven public tables have RLS enabled. The reviewer SELECT policy compares `user_id` with `auth.uid()` for the authenticated role.
 - Neither anon nor PUBLIC has EXECUTE grants on `claim_ai_handoff`/`complete_ai_handoff`. Both functions require active reviewer membership. Completion checks reviewer, request ID, processing state and lease token.
 - Re-ran isolated n8n authentication contract: execution **127**, success, four simulated cases. This does not validate real tokens.
+- A follow-up database count found zero anonymous-probe rows and zero `ORIGINAL_STAFF_TEST_` rows. No positive test was performed.
 - Re-ran live n8n anonymous RPC probe: execution **128**, success, actual HTTP **401**. No signed-in token was involved.
-- Local Node suites for original UI, Lite UI and ingress contract passed. New verifier and staging-gate tests also passed. These are local results, not proof of remote CI.
+- Local Node suites for original UI, Lite UI and ingress contract passed. New verifier and staging-gate tests also passed. Additionally, remote PR CI run [43632187856](https://github.com/Junaid-Nurgat/nurgat-command-centre/actions/runs/43632187856) completed successfully for commit `aafc0c1e9cbfa288bd2241af1f355f10f0e2723c`, running all four suites.
 
 ## New isolated staging workflow
 
