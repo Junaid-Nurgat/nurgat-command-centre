@@ -383,9 +383,21 @@ function renderSaved(){
  const state=document.createElement('p');state.className='small';state.textContent=(row.has_draft?'Test draft':'Test enquiry')+' · Saved '+new Date(row.created_at).toLocaleString();
  const open=document.createElement('button');open.type='button';open.className='btn';open.textContent='Reopen';open.addEventListener('click',()=>reopenSaved(row));
  const remove=document.createElement('button');remove.type='button';remove.className='btn ghost';remove.textContent='Delete saved copy';remove.addEventListener('click',async()=>{
- if(!confirm('Delete this saved snapshot? Other saved copies will stay.'))return;
+ if(!confirm('Delete ONLY this fictional saved copy? Other saved copies will remain.'))return;
+ if(remove.disabled)return;
  remove.disabled=true;
- try{await savedApi('?id=eq.'+encodeURIComponent(row.id),'DELETE');if(pendingSave?.id===row.id)pendingSave=null;await loadSaved();}catch(e){note('savedStatus',e.message,true);remove.disabled=false}
+ const owner=user?.id;
+ try{
+  const filter='?id=eq.'+encodeURIComponent(row.id);
+  await savedApi(filter,'DELETE');
+  // A successful HTTP DELETE can affect zero rows; verify the exact copy is absent.
+  const stillPresent=await savedApi(filter+'&select=id');
+  if(!Array.isArray(stillPresent)||stillPresent.length)throw Error('Delete could not be verified.');
+  if(pendingSave?.id===row.id)pendingSave=null;
+  await loadSaved();
+ }catch(e){
+  if(user?.id===owner)note('savedStatus','Could not confirm deletion. Refresh the Saved list before trying again; your other fictional copies are unaffected by this request.',true);
+ }finally{remove.disabled=false}
  });
  const actions=document.createElement('div');actions.className='actions';actions.append(open,remove);card.append(title,details,state,actions);list.append(card);
  }
