@@ -9,6 +9,7 @@ on:
       - 'scripts/test-staff-login-check.mjs'
       - 'lite.html'
       - 'scripts/test-lite-ui.mjs'
+      - 'scripts/test-saved-requests.mjs'
       - 'scripts/test-handoff-contract.mjs'
       - 'src/handoff-contract.mjs'
       - 'scripts/test-flight-ui.mjs'
@@ -25,5 +26,6 @@ jobs:
         run: |
           node scripts/test-flight-ui.mjs
           node scripts/test-lite-ui.mjs
+          node scripts/test-saved-requests.mjs
           node scripts/test-staff-login-check.mjs
           node scripts/test-handoff-contract.mjs

@@ -108,10 +108,12 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <div id="workspace" class="hidden">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 15px"><div><div class="tag" style="color:#428174">NURGAT TOURS</div><h1>Flight workspace</h1><p class="sub" style="margin:0">Simple steps. Built for your phone.</p></div><button class="btn ghost" id="logout" style="font-size:12px;min-height:40px">Log out</button></div>
 <div class="demo"><strong>◉ Training mode</strong> — Fictional flights and fares only. Real GDS access, customer quotations, messaging and bookings remain disabled.</div>
+<div class="actions"><button class="btn alt" id="saveRequest" type="button">Save request / draft</button><button class="btn ghost" id="newRequest" type="button">New request</button></div><p id="saveStatus" class="status" role="status"></p>
 <nav class="bottomnav" aria-label="Lite tasks">
 <button class="tab active" data-tab="search"><span>⌕</span>Search</button>
 <button class="tab" data-tab="results"><span>✈</span>Flights</button>
 <button class="tab" data-tab="quote"><span>▤</span>Quote</button>
+<button class="tab" data-tab="saved"><span>▣</span>Saved</button>
 <button class="tab" data-tab="ai"><span>✦</span>AI tools</button>
 </nav>
 <section id="step-search" class="stepview">
@@ -137,6 +139,7 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <p id="quoteStatus" class="status" role="status"></p><pre id="quotePreview" class="quote hidden"></pre>
 <details><summary>What's needed before real customer sending?</summary><p class="small muted">Authorized provider API, verified fares and taxes, baggage rules, offer expiry, approved pricing policy, exact-revision staff approval, an approved customer delivery channel and an audit trail.</p></details>
 </div></section>
+<section id="step-saved" class="stepview hidden"><div class="card"><span class="step">YOUR SAVED WORK</span><h2 style="margin-top:12px">Saved requests</h2><p class="sub">Private to your staff account. Each save keeps a separate fictional snapshot. Reopening refreshes sample flights and resets draft review.</p><button class="btn ghost" id="refreshSaved" type="button">Refresh list</button><p id="savedStatus" class="status" role="status"></p><div id="savedList"></div><button class="btn ghost hidden" id="moreSaved" type="button">Load more</button></div></section>
 <section id="step-ai" class="stepview hidden">
 <div class="card"><span class="step">OPTIONAL · AI</span><h2 style="margin-top:12px">Ask the flight AI</h2><p class="sub">Real AI model, fictional itinerary context only. No confidential pricing, customer details, GDS search or booking.</p>
 <form id="aiForm"><label class="field">Your question<input id="aiQuestion" maxlength="230" minlength="4" required placeholder="Which sample flight has fewer stops?"></label><button class="btn full" id="aiButton">Ask AI</button></form><p id="aiStatus" class="status" role="status"></p><div id="aiAnswer" class="quote hidden"></div></div>
@@ -149,6 +152,7 @@ const BASE='https://ysakhagnlmhwbbmetjjc.supabase.co';
 const KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
 const $=id=>document.getElementById(id);
 const DAY=86400000;
+let workspaceGeneration=0,savedBusy=false,savedOffset=0,savedRows=[],pendingSave=null;
 let token=null,user=null,offers=[],selected=null,quote=null,markup=0,searchContext=null;
 try{token=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
 const note=(id,msg,error=false)=>{$(id).textContent=msg;$(id).classList.toggle('error',error)};
@@ -179,7 +183,7 @@ async function checkUser(){if(!token?.access_token){setLoggedOut();return}
  if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
  user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');
 }
-function setLoggedOut(){user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+function setLoggedOut(){workspaceGeneration++;savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
  const email=$('email').value.trim(),password=$('password').value;
  const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
@@ -188,6 +192,7 @@ $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginBu
  }catch(err){note('loginStatus',err.message,true)}finally{$('loginButton').disabled=false}});
 $('logout').addEventListener('click',async()=>{if(token?.access_token)await request('/auth/v1/logout','POST');store(null);setLoggedOut()});
 function tab(name){
+ if(name==='saved')loadSaved();
  document.querySelectorAll('.stepview').forEach(e=>e.classList.toggle('hidden',e.id!=='step-'+name));
  document.querySelectorAll('.tab').forEach(b=>{const selected=b.dataset.tab===name;b.classList.toggle('active',selected);b.setAttribute('aria-current',selected?'page':'false')});
  window.scrollTo({top:0,behavior:'smooth'});
@@ -197,7 +202,7 @@ function isoAfter(days){const d=new Date(Date.now()+days*DAY);return d.toISOStri
 $('depart').value=isoAfter(35);$('returnDate').value=isoAfter(48);$('depart').min=isoAfter(0);$('returnDate').min=isoAfter(0);
 $('trip').addEventListener('change',()=>{const one=$('trip').value==='ONE_WAY';$('returnField').classList.toggle('hidden',one);$('returnDate').disabled=one;$('returnDate').required=!one;invalidate()});
 $('depart').addEventListener('change',()=>{const d=$('depart').value;$('returnDate').min=d;if($('returnDate').value<=d)$('returnDate').value=''});
-function invalidate(){quote=null;offers=[];selected=null;searchContext=null;renderQuote();$('offers').replaceChildren();$('pricing').classList.add('hidden');note('searchStatus','Details changed. Search again for a fresh fictional comparison.')}
+function invalidate(){workspaceGeneration++;pendingSave=null;quote=null;offers=[];selected=null;searchContext=null;renderQuote();$('offers').replaceChildren();$('pricing').classList.add('hidden');note('searchStatus','Details changed. Search again for a fresh fictional comparison.')}
 $('searchForm').addEventListener('input',invalidate);
 function searchData(){
  const x={origin:$('origin').value.trim().toUpperCase(),destination:$('destination').value.trim().toUpperCase(),departureDate:$('depart').value,returnDate:$('trip').value==='ROUND_TRIP'?$('returnDate').value:null,tripType:$('trip').value,adults:Number($('adults').value),children:Number($('children').value),infants:Number($('infants').value),cabin:$('cabin').value,preference:$('preference').value};
@@ -234,11 +239,13 @@ function setMarkup(value){
 $('markupSlider').addEventListener('input',e=>setMarkup(e.target.value));
 $('markupExact').addEventListener('change',e=>setMarkup(e.target.value));
 $('nextQuote').addEventListener('click',()=>tab('quote'));
-$('searchForm').addEventListener('submit',async e=>{
- e.preventDefault();if(!user){note('searchStatus','Please sign in.',true);return}
+$('searchForm').addEventListener('submit',e=>{e.preventDefault();searchFlights();});
+async function searchFlights(openResults=true){
+ const generation=workspaceGeneration,owner=user?.id;if(!user){note('searchStatus','Please sign in.',true);return}
  $('searchButton').disabled=true;note('searchStatus','Checking secure demo…');
  try{
   const x=searchData();const data=await call('nurgat-flight-research-demo',x);
+  if(generation!==workspaceGeneration||user?.id!==owner)return false;
   if(data?.ok!==true||data?.mode!=='FICTIONAL_DEMO_ONLY'||data?.providerConnected!==false||data?.fareVerified!==false||data?.customerSendAllowed!==false||data?.bookingAvailable!==false||data?.ticketIssuanceAllowed!==false||!Array.isArray(data.offers)||data.offers.length!==3)throw Error('Demo backend response did not pass safety checks.');
   const seen=new Set();const options=data.offers.map(f=>{
    if(!f||!/^DEMO-[A-C]$/.test(f.id)||seen.has(f.id)||!/^Sample Air [A-C]$/.test(f.airline)||f.currency!=='USD'||!Number.isSafeInteger(f.illustrativeTotal)||f.illustrativeTotal<0||!Number.isSafeInteger(f.durationMinutes)||f.durationMinutes<1||!Number.isSafeInteger(f.stops)||f.stops<0||f.stops>4)throw Error('Unexpected demonstration flight fields.');
@@ -246,10 +253,10 @@ $('searchForm').addEventListener('submit',async e=>{
   });
   const p=x.preference;
   options.sort((a,b)=>p==='FASTEST'?a.durationMinutes-b.durationMinutes:p==='FEWEST_STOPS'?a.stops-b.stops:p==='CHEAPEST'?a.price-b.price:(a.price/1000+a.durationMinutes/1000+a.stops*.27)-(b.price/1000+b.durationMinutes/1000+b.stops*.27));
-  offers=options;searchContext=x;selected=null;quote=null;note('searchStatus','Three fictional flights found. No real GDS used.');redraw();tab('results');
- }catch(err){offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true)}
+  offers=options;searchContext=x;selected=null;quote=null;note('searchStatus','Three fictional flights found. No real GDS used.');redraw();if(openResults)tab('results');return true;
+ }catch(err){if(generation!==workspaceGeneration||user?.id!==owner)return false;offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true);return false}
  finally{$('searchButton').disabled=false}
-});
+}
 function quoteText(q){return [
  'NURGAT TOURS — INTERNAL TRAINING ONLY',
  'FICTIONAL FLIGHT — NOT A CUSTOMER QUOTE — NEVER SEND',
@@ -302,5 +309,110 @@ $('planButton').addEventListener('click',async()=>{
  $('planAnswer').textContent=data.plan;$('planAnswer').classList.remove('hidden');note('planStatus','Ready for API integration; no commands executed.');
  }catch(err){note('planStatus',err.message,true)}finally{$('planButton').disabled=false}
 });
+// Server-side per-reviewer snapshots; no customer text, credentials or AI responses are saved.
+const SAVED_FIELDS='id,created_at,origin,destination,departure_date,return_date,trip_type,adults,children,infants,cabin,preference,selected_id,markup,has_draft,demo_only';
+async function savedApi(path,method='GET',body=null){
+ if(!user||!token?.access_token)throw Error('Please sign in again.');
+ const owner=user.id;
+ let r=await request('/rest/v1/lite_saved_requests'+path,method,body);
+ if(r.error?.code===401&&await refresh())r=await request('/rest/v1/lite_saved_requests'+path,method,body);
+ if(user?.id!==owner)throw Error('Account changed. Please try again.');
+ if(r.error)throw Error('Saved requests unavailable. Your current work is still on this page.');
+ return r.data;
+}
+function snapshotData(){
+ const x=searchData();
+ const matching=searchContext&&JSON.stringify(x)===JSON.stringify(searchContext);
+ const sample=matching?offers.find(f=>f.id===selected):null;
+ return {origin:x.origin,destination:x.destination,departure_date:x.departureDate,return_date:x.returnDate,trip_type:x.tripType,adults:x.adults,children:x.children,infants:x.infants,cabin:x.cabin,preference:x.preference,selected_id:sample?sample.id:null,markup,has_draft:!!(sample&&quote),demo_only:true};
+}
+$('saveRequest').addEventListener('click',async()=>{
+ if(savedBusy)return;
+ savedBusy=true;$('saveRequest').disabled=true;
+ const owner=user?.id;
+ try{
+ if(!owner)throw Error('Please sign in first.');
+ const data=snapshotData(),signature=JSON.stringify(data);
+ if(!pendingSave||pendingSave.signature!==signature)pendingSave={id:crypto.randomUUID(),signature};
+ const id=pendingSave.id;
+ note('saveStatus','Saving your fictional request…');
+ // A stable ID lets retries check a possibly successful previous write without making duplicates.
+ const existing=await savedApi('?id=eq.'+id+'&select=id');
+ if(!Array.isArray(existing)||!existing.length)await savedApi('','POST',{id,...data});
+ if(user?.id!==owner)return;
+ note('saveStatus','Saved to your account. Open Saved to return to this snapshot later. Draft review resets when reopened.');
+ }catch(e){if(user?.id===owner)note('saveStatus',e.message,true)}
+ finally{savedBusy=false;$('saveRequest').disabled=false}
+});
+let savedListSequence=0;
+async function loadSaved(more=false){
+ if(!user)return;
+ const owner=user.id,sequence=++savedListSequence;
+ if(!more){savedOffset=0;savedRows=[];$('savedList').replaceChildren();}
+ $('moreSaved').disabled=true;note('savedStatus','Loading saved requests…');
+ try{
+ const rows=await savedApi('?select='+SAVED_FIELDS+'&order=created_at.desc,id.desc&limit=50&offset='+savedOffset);
+ if(user?.id!==owner||sequence!==savedListSequence)return;
+ if(!Array.isArray(rows))throw Error('Could not read the saved list.');
+ savedRows.push(...rows);savedOffset+=rows.length;renderSaved();
+ $('moreSaved').classList.toggle('hidden',rows.length<50);
+ note('savedStatus',savedRows.length?savedRows.length+' saved snapshot(s).':'No saved requests yet. Enter a test trip, then use Save request / draft.');
+ }catch(e){if(user?.id===owner&&sequence===savedListSequence)note('savedStatus',e.message,true)}
+ finally{if(sequence===savedListSequence)$('moreSaved').disabled=false}
+}
+function renderSaved(){
+ const list=$('savedList');list.replaceChildren();
+ for(const row of savedRows){
+ const card=document.createElement('article');card.className='offer';
+ const title=document.createElement('h3');title.textContent=row.origin+' → '+row.destination;
+ const details=document.createElement('p');details.className='small muted';details.textContent=row.departure_date+(row.return_date?' to '+row.return_date:' · One way')+' · '+row.adults+' adult(s) · '+row.cabin;
+ const state=document.createElement('p');state.className='small';state.textContent=(row.has_draft?'Test draft':'Test enquiry')+' · Saved '+new Date(row.created_at).toLocaleString();
+ const open=document.createElement('button');open.type='button';open.className='btn';open.textContent='Reopen';open.addEventListener('click',()=>reopenSaved(row));
+ const remove=document.createElement('button');remove.type='button';remove.className='btn ghost';remove.textContent='Delete saved copy';remove.addEventListener('click',async()=>{
+ if(!confirm('Delete this saved snapshot? Other saved copies will stay.'))return;
+ remove.disabled=true;
+ try{await savedApi('?id=eq.'+encodeURIComponent(row.id),'DELETE');if(pendingSave?.id===row.id)pendingSave=null;await loadSaved();}catch(e){note('savedStatus',e.message,true);remove.disabled=false}
+ });
+ const actions=document.createElement('div');actions.className='actions';actions.append(open,remove);card.append(title,details,state,actions);list.append(card);
+ }
+}
+function restoreFields(row){
+ if(row.demo_only!==true)throw Error('Only fictional snapshots can be reopened.');
+ const values={origin:row.origin,destination:row.destination,depart:row.departure_date,returnDate:row.return_date||'',trip:row.trip_type,adults:row.adults,children:row.children,infants:row.infants,cabin:row.cabin,preference:row.preference};
+ for(const [id,value] of Object.entries(values))$(id).value=String(value);
+ const one=row.trip_type==='ONE_WAY';$('returnField').classList.toggle('hidden',one);$('returnDate').disabled=one;$('returnDate').required=!one;$('returnDate').min=row.departure_date;
+ markup=row.markup;$('markupSlider').value=String(markup);$('markupExact').value=String(markup);$('markupLabel').textContent=usd(markup);
+}
+async function reopenSaved(row){
+ if(!user)return;
+ if((searchContext||quote)&&!confirm('Replace the current on-screen work with this saved snapshot? Save current changes first if needed.'))return;
+ workspaceGeneration++;const generation=workspaceGeneration;
+ pendingSave=null;offers=[];selected=null;quote=null;searchContext=null;renderQuote();$('offers').replaceChildren();$('pricing').classList.add('hidden');
+ for(const id of ['aiAnswer','planAnswer']){$(id).textContent='';$(id).classList.add('hidden');}
+ note('aiStatus','');note('planStatus','');
+ try{
+ restoreFields(row);tab('search');
+ note('saveStatus','Reopened saved trip details. Any draft will need a fresh review.');
+ if(row.departure_date<isoAfter(0)){note('searchStatus','Saved dates are in the past. Choose future dates and search again.',true);return;}
+ if(row.selected_id){
+ const ok=await searchFlights(false);
+ if(!ok||generation!==workspaceGeneration)return;
+ selected=offers.some(f=>f.id===row.selected_id)?row.selected_id:null;redraw();
+ if(row.has_draft&&selected)$('makeQuote').click();
+ tab(row.has_draft&&selected?'quote':'results');
+ note('saveStatus','Reopened with refreshed fictional samples. Draft status: unreviewed.');
+ }
+ }catch(e){note('saveStatus',e.message,true)}
+}
+$('refreshSaved').addEventListener('click',()=>loadSaved());
+$('moreSaved').addEventListener('click',()=>loadSaved(true));
+$('newRequest').addEventListener('click',()=>{
+ if(!confirm('Start a new request? Unsaved on-screen changes will be cleared.'))return;
+ $('searchForm').reset();$('depart').value=isoAfter(35);$('returnDate').value=isoAfter(48);$('returnDate').min=isoAfter(0);$('returnDate').disabled=false;$('returnDate').required=true;$('returnField').classList.remove('hidden');
+ invalidate();markup=0;$('markupSlider').value='0';$('markupExact').value='0';$('markupLabel').textContent=usd(0);
+ for(const id of ['aiAnswer','planAnswer']){$(id).textContent='';$(id).classList.add('hidden');}
+ note('saveStatus','New fictional request.');note('searchStatus','');note('aiStatus','');note('planStatus','');tab('search');
+});
+
 checkUser();
 </script></body></html>

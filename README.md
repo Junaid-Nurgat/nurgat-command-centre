@@ -123,3 +123,11 @@ See [Pre-Approval Build Handoff](docs/PRE_APPROVAL_HANDOFF.md) for verified n8n 
 - Browser access token is kept only in JS memory (not `localStorage`, `sessionStorage`, ChatGPT or GitHub), cleared on sign-out/page close. The static webpage source is **public** on GitHub Pages, not a private login server.
 - Added `scripts/test-staff-login-check.mjs` and configured CI to run it with the existing three test scripts.
 - **Availability status:** Source committed to GitHub; Pages deployment and successful live sign-in have **not yet been verified externally**. Do not claim actual user authentication or end-to-end AI handoff passed from the page's existence alone.
+
+## Saved fictional requests — 15 November 2026
+- Lite now has Save request / draft, Saved, Reopen and Delete saved copy controls. Each explicit changed save makes a separate snapshot; retrying an unchanged save reuses its ID.
+- Supabase `lite_saved_requests` stores structured fictional trip fields, sample selection, markup and draft presence. No customer text, AI outputs, tokens or review approval are stored.
+- RLS requires both ownership and active reviewer membership for SELECT/INSERT/DELETE; no UPDATE or anonymous grants. Snapshots cannot change owners.
+- Reopening refreshes samples through the existing secure demo backend and reconstructs an **unreviewed** draft. Past dates reopen for editing without a sample search. Changes still need an explicit save.
+- Checks: existing UI tests plus `scripts/test-saved-requests.mjs` passed locally. Database catalog confirms RLS, three policies, no anonymous SELECT and no authenticated UPDATE. Transactional write/RLS exercise did not run because its confirmation expired; signed-in browser save/reopen remains to verify.
+- Schema reference: [saved requests schema](docs/LITE_SAVED_REQUESTS_SCHEMA.sql). Applied through Supabase migrations `lite_saved_requests` and `lite_saved_requests_require_return_date`.
