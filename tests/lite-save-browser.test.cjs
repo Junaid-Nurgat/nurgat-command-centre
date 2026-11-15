@@ -38,6 +38,8 @@ const demoFlights = {
     let postCount = 0;
     let failCheckOnce = false, malformedCheckOnce = false;
     let failBeforeWriteOnce = false, failAfterWriteOnce = false;
+    let failDeleteOnce = false, noOpDeleteOnce = false, lostDeleteReplyOnce = false;
+    let deletedCount = 0;
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     page.on('pageerror', err => { console.error('PAGE ERROR:', err.message); });
@@ -66,6 +68,29 @@ const demoFlights = {
           }
           const rows = filter?.startsWith('eq.') ? records.filter(r => r.id === filter.slice(3)) : records;
           return reply(rows.slice().sort((a,b) => b.created_at.localeCompare(a.created_at)));
+        }
+        if (method === 'DELETE') {
+          const filter = url.searchParams.get('id');
+          if (!/^eq\.[0-9a-f-]{36}$/i.test(filter || '')) throw new Error('DELETE must target exactly one saved snapshot UUID');
+          if (failDeleteOnce) {
+            failDeleteOnce = false;
+            return route.abort('failed');
+          }
+          if (noOpDeleteOnce) {
+            noOpDeleteOnce = false;
+            return reply({}); // Simulate 200 response with 0 rows deleted.
+          }
+          const id = filter.slice(3);
+          const index = records.findIndex(r => r.id === id);
+          if (index >= 0) {
+            records.splice(index, 1);
+            deletedCount++;
+          }
+          if (lostDeleteReplyOnce) {
+            lostDeleteReplyOnce = false;
+            return route.abort('failed'); // Server deleted, browser lost response.
+          }
+          return reply({});
         }
         if (method === 'POST') {
           const row = req.postDataJSON();
@@ -199,7 +224,59 @@ const demoFlights = {
     assert.equal(postCount, countAfterLostResponse, 'Retry must not POST again');
     console.log('PASS 9: Lost response after commit recovered without duplicate POST');
 
-    console.log('RESULT: 9/9 real-browser tests passed with mocked Supabase.');
+    // Deletion tests: all 5 snapshots are fictional and belong only to the mocked staff session.
+    await page.locator('#tabSaved').click();
+    await page.getByText('5 saved snapshot(s).').waitFor();
+    assert.equal(await page.locator('#savedList article.offer').count(), 5);
+    const remainingBeforeDelete = records.map(r => r.id);
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).click();
+    assert.equal(records.length, 5);
+    assert.equal(deletedCount, 0);
+    console.log('PASS 10: Cancelled deletion leaves all fictional snapshots intact');
+
+    const firstTarget = records.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at))[0].id;
+    failDeleteOnce = true;
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).click();
+    await page.getByText('Could not confirm deletion.', { exact: false }).waitFor();
+    assert.equal(records.length, 5);
+    assert.equal(deletedCount, 0);
+    assert.equal(await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).isEnabled(), true);
+    console.log('PASS 11: Network failure before deletion preserves all copies and allows retry');
+
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).click();
+    await page.getByText('4 saved snapshot(s).').waitFor();
+    assert.equal(records.length, 4);
+    assert.equal(deletedCount, 1);
+    assert.equal(records.some(r => r.id === firstTarget), false);
+    assert.deepEqual(records.map(r=>r.id).sort(), remainingBeforeDelete.filter(id=>id!==firstTarget).sort());
+    console.log('PASS 12: Confirmed deletion removes exactly one chosen snapshot and leaves other four');
+
+    const beforeNoOp = records.map(r => r.id).sort();
+    noOpDeleteOnce = true;
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).click();
+    await page.getByText('Could not confirm deletion.', { exact: false }).waitFor();
+    assert.deepEqual(records.map(r=>r.id).sort(), beforeNoOp);
+    assert.equal(deletedCount, 1);
+    console.log('PASS 13: Server claiming success but deleting zero rows is detected');
+
+    const nextTarget = records.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at))[0].id;
+    lostDeleteReplyOnce = true;
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#savedList article.offer').first().getByRole('button', { name: 'Delete saved copy' }).click();
+    await page.getByText('Could not confirm deletion.', { exact: false }).waitFor();
+    assert.equal(records.length, 3);
+    assert.equal(records.some(r=>r.id===nextTarget), false);
+    await page.locator('#refreshSaved').click();
+    await page.getByText('3 saved snapshot(s).').waitFor();
+    assert.equal(await page.locator('#savedList article.offer').count(), 3);
+    assert.equal(deletedCount, 2);
+    console.log('PASS 14: Lost delete response warns staff; refreshed list shows actual outcome');
+
+    console.log('RESULT: 14/14 real-browser tests passed with mocked Supabase.');
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
