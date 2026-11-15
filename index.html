@@ -330,19 +330,33 @@ $('saveRequest').addEventListener('click',async()=>{
  if(savedBusy)return;
  savedBusy=true;$('saveRequest').disabled=true;
  const owner=user?.id;
+ let saveStage='check';
  try{
- if(!owner)throw Error('Please sign in first.');
- const data=snapshotData(),signature=JSON.stringify(data);
- if(!pendingSave||pendingSave.signature!==signature)pendingSave={id:crypto.randomUUID(),signature};
- const id=pendingSave.id;
- note('saveStatus','Saving your fictional request…');
- // A stable ID lets retries check a possibly successful previous write without making duplicates.
- const existing=await savedApi('?id=eq.'+id+'&select=id');
- if(!Array.isArray(existing)||!existing.length)await savedApi('','POST',{id,...data});
- if(user?.id!==owner)return;
- note('saveStatus','Saved to your account. Open Saved to return to this snapshot later. Draft review resets when reopened.');
- }catch(e){if(user?.id===owner)note('saveStatus',e.message,true)}
- finally{savedBusy=false;$('saveRequest').disabled=false}
+  if(!owner)throw Error('Please sign in first.');
+  const data=snapshotData(),signature=JSON.stringify(data);
+  if(!pendingSave||pendingSave.signature!==signature)pendingSave={id:crypto.randomUUID(),signature};
+  const id=pendingSave.id;
+  note('saveStatus','Checking and saving your fictional request…');
+  // Keep one stable ID across retries, even when the server saved the row but the response was lost.
+  const existing=await savedApi('?id=eq.'+id+'&select=id');
+  if(!Array.isArray(existing))throw Error('Unexpected response while checking saved request.');
+  if(!existing.length){
+   saveStage='write';
+   await savedApi('','POST',{id,...data});
+  }
+  if(user?.id!==owner)return;
+  note('saveStatus','Saved to your account. Open Saved to return to this snapshot later. Draft review resets when reopened.');
+ }catch(e){
+  if(user?.id===owner){
+   const needsSignIn=/Please sign in/i.test(e.message);
+   const message=needsSignIn
+    ? 'Sign in again before saving. Your fictional work remains on this page.'
+    : saveStage==='write'
+      ? 'Save could not be confirmed. It may already be saved. Your fictional work remains here. Check your connection, then click Save request / draft again to safely verify the same copy.'
+      : 'Could not verify saved status. Your fictional work remains here. Check your connection or staff access, then click Save request / draft again to safely retry the same copy.';
+   note('saveStatus',message,true);
+  }
+ }finally{savedBusy=false;$('saveRequest').disabled=false}
 });
 let savedListSequence=0;
 async function loadSaved(more=false){
