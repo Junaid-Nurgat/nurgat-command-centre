@@ -14,19 +14,19 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #e8a7
 ol{padding-left:22px}li{margin:8px 0}.tag{font-size:12px;font-weight:700;color:#2d6562}
 </style></head>
 <body><main><header><div class="eyebrow">NURGAT TOURS • CONTROLLED TEST</div><h1>Staff account check</h1><p class="muted">Use your existing Command Centre account. This is a limited security test, not a flight booking service.</p></header>
-<section><h2>Before signing in</h2><p>Only use this page if you have the business owner's permission. Make sure the address starts with <strong>junaid-nurgat.github.io/nurgat-command-centre/</strong>.</p><p><strong>No flight requests, WhatsApp messages, bookings or payments will be made.</strong></p><small>The webpage source is public on GitHub Pages. Your password goes directly from this browser to Supabase Auth, not to GitHub or ChatGPT. Do not share screenshots showing passwords, codes or tokens.</small></section>
+<section><h2>Before signing in</h2><p>Only use this page if you have the business owner's permission. Make sure the address starts with <strong>junaid-nurgat.github.io/nurgat-command-centre/</strong>.</p><p><strong>No customer messages, real flight searches, bookings or payments will be made. Step 4 creates an internal fictional test record and calls the research AI.</strong></p><small>The webpage source is public on GitHub Pages. Your password goes directly from this browser to Supabase Auth, not to GitHub or ChatGPT. Do not share screenshots showing passwords, codes or tokens.</small></section>
 <section id="signInCard"><h2>Step 1 — Sign in</h2><form id="loginForm" autocomplete="on"><label for="email">Staff email</label><input id="email" name="email" type="email" autocomplete="username" required maxlength="254"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required><button id="signIn" type="submit">Sign in and check permission</button></form><p id="loginResult" class="status" role="status" aria-live="polite">Not signed in.</p></section>
-<section id="results" class="hidden"><h2>Step 2 — Verify staff access</h2><p id="userResult" class="status" role="status">Account check not run.</p><p id="reviewResult" class="status" role="status">Reviewer permission not checked.</p><button id="recheck" class="secondary" type="button">Recheck account</button><h2>Step 3 — Protected endpoint check</h2><p>Optional: safely test whether your authorized account can reach the protected database function. It sends an intentionally invalid test ID, so it <strong>cannot create or complete a flight request</strong>.</p><button id="endpointCheck" type="button" disabled>Test protected endpoint (no changes)</button><p id="rpcResult" class="status" role="status">Not tested.</p><button id="signOut" class="secondary" type="button">Sign out and clear session</button></section>
-<section><h2>What to report back</h2><ol><li>Whether sign-in succeeded.</li><li>Whether the page says <strong>Active reviewer: YES</strong>.</li><li>Whether the protected endpoint check passed.</li></ol><p class="muted">Never copy passwords, security codes, access tokens, or raw error details into a chat. This is <strong>not</strong> an end-to-end n8n test.</p></section>
+<section id="results" class="hidden"><h2>Step 2 — Verify staff access</h2><p id="userResult" class="status" role="status">Account check not run.</p><p id="reviewResult" class="status" role="status">Reviewer permission not checked.</p><button id="recheck" class="secondary" type="button">Recheck account</button><h2>Step 3 — Protected endpoint check</h2><p>Optional: safely test whether your authorized account can reach the protected database function. It sends an intentionally invalid test ID, so it <strong>cannot create or complete a flight request</strong>.</p><button id="endpointCheck" type="button" disabled>Test protected endpoint (no changes)</button><p id="rpcResult" class="status" role="status">Not tested.</p><h2>Step 4 — Fictional AI handoff test</h2><p>First open the staging workflow in n8n and click <strong>Listen for test event</strong> on its webhook. Then click below. This sends a fixed one-way LUN → DXB test trip, uses AI credits, and writes an internal test status. Your session is sent directly to the business's n8n workflow, which has execution-data saving disabled.</p><p>For a duplicate check, listen again in n8n and click the same button again without refreshing this page.</p><button id="handoffCheck" type="button" disabled>Run fictional handoff test</button><p id="handoffResult" class="status" role="status" aria-live="polite">Not tested.</p><pre id="handoffPlan" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre><button id="signOut" class="secondary" type="button">Sign out and clear session</button></section>
+<section><h2>What to report back</h2><ol><li>Whether sign-in succeeded.</li><li>Whether the page says <strong>Active reviewer: YES</strong>.</li><li>Whether the protected endpoint check passed.</li></ol><p class="muted">Never copy passwords, security codes, access tokens, or raw error details into a chat. Steps 1–3 test authentication only. Step 4 separately tests the staging handoff; it does not test WhatsApp or live flight providers.</p></section>
 </main>
 <script>
 'use strict';
 const BASE='https://ysakhagnlmhwbbmetjjc.supabase.co';
 const API_KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
 const byId=id=>document.getElementById(id);
-let session=null,reviewer=false,busy=false;
+let session=null,reviewer=false,busy=false,handoffFixture=null;
 const setStatus=(id,text,kind='')=>{const el=byId(id);el.textContent=text;el.className='status'+(kind?' '+kind:'')};
-function reset(){session=null;reviewer=false;byId('password').value='';byId('results').classList.add('hidden');byId('signInCard').classList.remove('hidden');byId('endpointCheck').disabled=true}
+function reset(){session=null;reviewer=false;handoffFixture=null;byId('handoffCheck').disabled=true;byId('handoffPlan').textContent='';setStatus('handoffResult','Not tested.');byId('password').value='';byId('results').classList.add('hidden');byId('signInCard').classList.remove('hidden');byId('endpointCheck').disabled=true}
 async function api(path,{method='GET',body=null,authenticated=false}={}){
  const headers={apikey:API_KEY};
  if(body!==null)headers['content-type']='application/json';
@@ -35,9 +35,9 @@ async function api(path,{method='GET',body=null,authenticated=false}={}){
  const data=await response.json().catch(()=>null);
  return {status:response.status,ok:response.ok,data};
 }
-async function guard(fn){if(busy)return;busy=true;const buttons=[byId('signIn'),byId('recheck'),byId('endpointCheck')];buttons.forEach(b=>b.disabled=true);
+async function guard(fn){if(busy)return;busy=true;const buttons=[byId('signIn'),byId('recheck'),byId('endpointCheck'),byId('handoffCheck')];buttons.forEach(b=>b.disabled=true);
  try{await fn()}catch(e){setStatus('loginResult','Unable to complete the check. Check your connection and try again.','error')}
- finally{busy=false;byId('signIn').disabled=false;byId('recheck').disabled=false;byId('endpointCheck').disabled=!reviewer}}
+ finally{busy=false;byId('signIn').disabled=false;byId('recheck').disabled=false;byId('endpointCheck').disabled=!reviewer;byId('handoffCheck').disabled=!reviewer}}
 async function verifyAccount(){
  reviewer=false;byId('endpointCheck').disabled=true;
  setStatus('userResult','Checking signed-in account...');
@@ -70,6 +70,35 @@ byId('endpointCheck').addEventListener('click',()=>guard(async()=>{
  else if(response.status===401||response.status===403){setStatus('rpcResult','DENIED: this session cannot use the protected endpoint. Ask the administrator.','error')}
  else{setStatus('rpcResult','Result not verified. Do not proceed with further testing. Status: '+String(response.status), 'error')}
 }));
+
+byId('handoffCheck').addEventListener('click',()=>guard(async()=>{
+ if(!reviewer||!session?.access_token)return;
+ const activeSession=session;
+ if(!handoffFixture)handoffFixture={
+ requestId:'ORIGINAL_STAFF_TEST_'+crypto.randomUUID(),
+ request:{origin:'LUN',destination:'DXB',departureDate:new Date(Date.now()+35*86400000).toISOString().slice(0,10),returnDate:null,tripType:'ONE_WAY',adults:1,children:0,infants:0,cabin:'ECONOMY',preference:'BEST'}};
+ setStatus('handoffResult','Running fictional staging handoff…');
+ byId('handoffPlan').textContent='';
+ try{
+ const response=await fetch('https://nurgattourszm.app.n8n.cloud/webhook-test/nurgat-original-reviewer-staging-v1',{
+ method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...handoffFixture,jwt:activeSession.access_token}),
+ cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(55000)});
+ const d=await response.json().catch(()=>null);
+ if(session!==activeSession)return;
+ if(!response.ok||!d){setStatus('handoffResult','Test did not complete. Start Listen for test event in n8n, then retry. HTTP '+response.status,'error');return}
+ const flags=d.stage==='AI1_TO_AI2_INTERNAL_HANDOFF_DEMO'&&d.providerConnected===false&&d.customerSendAllowed===false&&d.customerQuoteAvailable===false&&d.bookingAvailable===false&&d.ticketIssuanceAllowed===false;
+ if(flags&&d.ok===true&&d.status==='COMPLETED'&&d.handoffCompleted===true&&typeof d.plan==='string'&&d.plan.length<=2500&&d.plan.startsWith('GDS RESEARCH PLAN — NOT CONNECTED')){
+ setStatus('handoffResult','PASS: fictional handoff completed and its completion was recorded. No customer message or booking.','success');byId('handoffPlan').textContent=d.plan;
+ }else if(flags&&d.ok===true&&d.status==='DUPLICATE_COMPLETED'&&d.duplicate===true){
+ setStatus('handoffResult','PASS: duplicate completed request rejected without calling the research AI again.','success');
+ }else if(flags&&d.status==='DUPLICATE_IN_PROGRESS'){
+ setStatus('handoffResult','Request is still processing. This is not a completion pass.');
+ }else{setStatus('handoffResult','Result did not meet the completion checks. Report this status without copying raw response data.','error')}
+ }catch{
+ if(session===activeSession)setStatus('handoffResult','No verified result. Check the n8n test listener and connection. Retry with this same page to preserve the request ID.','error');
+ }
+}));
+
 byId('signOut').addEventListener('click',async()=>{
  const old=session;reset();setStatus('loginResult','Signed out. The page no longer holds your session.','success');
  if(old?.access_token){try{await fetch(BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,authorization:'Bearer '+old.access_token},cache:'no-store',credentials:'omit'})}catch{}}
