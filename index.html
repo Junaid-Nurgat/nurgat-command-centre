@@ -117,6 +117,13 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <button class="tab" data-tab="ai"><span>✦</span>AI tools</button>
 </nav>
 <section id="step-search" class="stepview">
+<div class="card" id="fictionalInbox">
+<span class="step">TRAINING ONLY · MOCK INBOX</span>
+<h2 style="margin-top:12px">Sample incoming enquiries</h2>
+<p class="sub">These examples are built into this training page. They are NOT customer messages and are not connected to WhatsApp, email, or any live inbox.</p>
+<div id="demoEnquiryList"></div>
+<p id="demoInboxStatus" class="status" role="status">Select one fictional example to fill the trip, prepare a demo draft and save its snapshot automatically.</p>
+</div>
 <div class="card"><span class="step">01 / 03 · SEARCH</span><h2 style="margin-top:12px">Where are they flying?</h2><p class="sub">Enter only test travel details, not real customer information.</p>
 <form id="searchForm">
 <div class="cols"><label class="field">From (IATA)<input id="origin" required maxlength="3" pattern="[A-Za-z]{3}" value="LUN"></label><label class="field">To (IATA)<input id="destination" required maxlength="3" pattern="[A-Za-z]{3}" value="DXB"></label></div>
@@ -184,9 +191,9 @@ async function checkUser(){if(!token?.access_token){setLoggedOut();return}
  if(x.error||!x.data?.id){store(null);setLoggedOut();return}
  const member=await request('/rest/v1/approval_reviewers?select=user_id&active=eq.true&user_id=eq.'+encodeURIComponent(x.data.id)+'&limit=1');
  if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
- user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');
+ user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');renderDemoInbox();
 }
-function setLoggedOut(){workspaceGeneration++;savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+function setLoggedOut(){workspaceGeneration++;demoProcessed.clear();demoInboxBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
  const email=$('email').value.trim(),password=$('password').value;
  const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
@@ -202,6 +209,60 @@ function tab(name){
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
 function isoAfter(days){const d=new Date(Date.now()+days*DAY);return d.toISOString().slice(0,10)}
+// Built-in fictional fixtures only. No message text, customer contact data,
+// external channels, webhooks or API-issued enquiries are accepted here.
+const DEMO_ENQUIRIES=Object.freeze([
+ {id:'DEMO-INBOX-1',label:'Sample 1 · Lusaka to Dubai',description:'One adult, one-way, economy · departs in 42 days',origin:'LUN',destination:'DXB',tripType:'ONE_WAY',departInDays:42,returnInDays:null,adults:1,children:0,infants:0,cabin:'ECONOMY',preference:'BEST'},
+ {id:'DEMO-INBOX-2',label:'Sample 2 · Lusaka to Johannesburg',description:'Two adults, return flight, economy · departs in 55 days',origin:'LUN',destination:'JNB',tripType:'ROUND_TRIP',departInDays:55,returnInDays:63,adults:2,children:0,infants:0,cabin:'ECONOMY',preference:'CHEAPEST'}
+]);
+const demoProcessed=new Set();
+let demoInboxBusy=false;
+function renderDemoInbox(){
+ const list=$('demoEnquiryList');list.replaceChildren();
+ for(const item of DEMO_ENQUIRIES){
+  const row=document.createElement('article');row.className='offer';
+  const heading=document.createElement('h3');heading.textContent=item.label;
+  const desc=document.createElement('p');desc.className='small muted';desc.textContent=item.description;
+  const button=document.createElement('button');button.type='button';button.className='btn full';
+  button.dataset.demoEnquiry=item.id;
+  const processed=demoProcessed.has(item.id);
+  button.textContent=processed?'Processed in this session':'Process fictional example (1 click)';
+  button.disabled=!user||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy||processed;
+  button.addEventListener('click',()=>{void processDemoEnquiry(item.id)});
+  row.append(heading,desc,button);list.append(row);
+ }
+}
+async function processDemoEnquiry(id){
+ const e=DEMO_ENQUIRIES.find(x=>x.id===id);
+ if(!e||!user||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy||demoProcessed.has(id))return;
+ demoInboxBusy=true;renderDemoInbox();
+ const owner=user.id;
+ try{
+  // Assign only safe, prevalidated fictional fixture fields. The existing
+  // flight-search validation and safe response checks still run afterward.
+  $('origin').value=e.origin;$('destination').value=e.destination;
+  $('trip').value=e.tripType;$('depart').value=isoAfter(e.departInDays);
+  $('returnDate').value=e.returnInDays===null?'':isoAfter(e.returnInDays);
+  $('returnDate').min=$('depart').value;
+  const one=e.tripType==='ONE_WAY';
+  $('returnField').classList.toggle('hidden',one);
+  $('returnDate').disabled=one;$('returnDate').required=!one;
+  $('adults').value=String(e.adults);$('children').value=String(e.children);$('infants').value=String(e.infants);
+  $('cabin').value=e.cabin;$('preference').value=e.preference;
+  markup=0;$('markupSlider').value='0';$('markupExact').value='0';$('markupLabel').textContent=usd(0);
+  invalidate(); // Cancel any old draft, invalidate old request IDs.
+  const generation=workspaceGeneration;
+  note('demoInboxStatus','Processing built-in '+e.id+' — no real enquiry or flight provider used.');
+  const saved=await runQuickDraft();
+  if(generation!==workspaceGeneration||user?.id!==owner)return;
+  if(saved)demoProcessed.add(id);
+  note('demoInboxStatus',saved
+   ? 'Fictional example processed and its request snapshot saved. Draft remains unreviewed; no messages or bookings.'
+   : 'Fictional example could not be fully saved. Review the search and save status; no external enquiry was processed.',!saved);
+ }catch(_err){
+  if(user?.id===owner)note('demoInboxStatus','Sample processing stopped safely. No real messages or bookings occurred.',true);
+ }finally{demoInboxBusy=false;renderDemoInbox()}
+}
 $('depart').value=isoAfter(35);$('returnDate').value=isoAfter(48);$('depart').min=isoAfter(0);$('returnDate').min=isoAfter(0);
 $('trip').addEventListener('change',()=>{const one=$('trip').value==='ONE_WAY';$('returnField').classList.toggle('hidden',one);$('returnDate').disabled=one;$('returnDate').required=!one;invalidate()});
 $('depart').addEventListener('change',()=>{const d=$('depart').value;$('returnDate').min=d;if($('returnDate').value<=d)$('returnDate').value=''});
@@ -294,16 +355,16 @@ function prepareTestDraft(){
  return true;
 }
 $('makeQuote').addEventListener('click',prepareTestDraft);
-$('autoDraft').addEventListener('click',async()=>{
- if(quickDraftBusy||searchBusy||!user)return;
+async function runQuickDraft(){
+ if(quickDraftBusy||searchBusy||savedBusy||!user)return false;
  quickDraftBusy=true;$('autoDraft').disabled=true;
  const generation=workspaceGeneration,owner=user.id;
  try{
   const ok=await searchFlights(false);
   // Never create an old draft if staff switched accounts or changed the form mid-request.
-  if(!ok||generation!==workspaceGeneration||user?.id!==owner||!offers.length)return;
+  if(!ok||generation!==workspaceGeneration||user?.id!==owner||!offers.length)return false;
   selected=offers[0].id; // Already sorted by requested priority using validated fictional prices.
-  if(!prepareTestDraft())return;
+  if(!prepareTestDraft())return false;
   redraw();tab('quote');
   note('quoteStatus','Auto-prepared the top-ranked FICTIONAL sample. Staff review still required; customer sending and booking remain locked.');
   const saved=await saveSnapshot({automated:true});
@@ -313,8 +374,10 @@ $('autoDraft').addEventListener('click',async()=>{
     ? 'Fictional draft prepared and request snapshot auto-saved. Staff review still required; no customer sending or booking.'
     : 'Fictional draft prepared, but automatic saving was not confirmed. Use Save request / draft to retry. No customer sending or booking.');
   }
+  return saved;
  }finally{quickDraftBusy=false;$('autoDraft').disabled=false}
-});
+}
+$('autoDraft').addEventListener('click',()=>{void runQuickDraft()});
 $('reviewQuote').addEventListener('click',()=>{if(quote){quote.reviewed=true;renderQuote()}});
 $('discardQuote').addEventListener('click',()=>{quote=null;renderQuote()});
 $('copyQuote').addEventListener('click',async()=>{
@@ -477,5 +540,6 @@ $('newRequest').addEventListener('click',()=>{
  note('saveStatus','New fictional request.');note('searchStatus','');note('aiStatus','');note('planStatus','');tab('search');
 });
 
+renderDemoInbox();
 checkUser();
 </script></body></html>
