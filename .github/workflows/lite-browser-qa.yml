@@ -8,6 +8,10 @@ on:
       - tests/lite-one-click-browser.test.cjs
       - tests/lite-fictional-inbox-browser.test.cjs
       - tests/lite-monitor-browser.test.cjs
+      - tests/lite-monitor-readonly-browser.test.cjs
+      - tests/monitoring-readonly.test.mjs
+      - supabase/functions/nurgat-monitor-readonly/index.ts
+      - supabase/functions/_shared/monitoring-readonly.mjs
       - staging-handoff.html
       - tests/staging-smoke-browser.test.cjs
       - .github/workflows/lite-browser-qa.yml
@@ -27,6 +31,8 @@ jobs:
         run: npm install --no-save --no-package-lock playwright@1.56.1
       - name: Install Chromium for the test runner
         run: npx playwright install --with-deps chromium
+      - name: Verify isolated read-only bridge security contract
+        run: node tests/monitoring-readonly.test.mjs
       - name: Run real-browser UI test with mocked Supabase requests
         run: |
           node tests/lite-save-browser.test.cjs
@@ -34,4 +40,5 @@ jobs:
           node tests/lite-one-click-browser.test.cjs
           node tests/lite-fictional-inbox-browser.test.cjs
           node tests/lite-monitor-browser.test.cjs
+          node tests/lite-monitor-readonly-browser.test.cjs
           node tests/staging-smoke-browser.test.cjs
