@@ -204,7 +204,7 @@ const safe={
 
   failAtSearchCall=0;
   await page.locator('#processAllDemo').click();
-  await page.getByText('Batch complete: 1 fictional requests saved.',{exact:false}).waitFor();
+  await page.getByText('Batch complete: 1 fictional request saved.',{exact:false}).waitFor();
   assert.equal(rows.length,beforeOutage+2);
   assert.equal(rows[beforeOutage+1].destination,'JNB');
   assert.equal(await page.locator('#quotePreview').isVisible(),true);
