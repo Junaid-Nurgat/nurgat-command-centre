@@ -39,7 +39,7 @@ const safe={
    }));
   });
   const searches=[],rows=[];
-  let response=safe,searchStatus=200,searchDelay=0,postCount=0,lostPostReply=false;
+  let response=safe,searchStatus=200,searchDelay=0,postCount=0,lostPostReply=false,failAtSearchCall=0;
   await page.route(BASE+'/**',async route=>{
    const req=route.request(),url=new URL(req.url());
    const reply=(v,status=200)=>route.fulfill({status,headers,body:JSON.stringify(v)});
@@ -74,7 +74,7 @@ const safe={
    assert.equal(body.email,undefined);
    assert.equal(body.phone,undefined);
    searches.push(body);
-   const capturedResponse=response,capturedStatus=searchStatus,capturedDelay=searchDelay;
+   const capturedResponse=response,capturedStatus=failAtSearchCall===searches.length?503:searchStatus,capturedDelay=searchDelay;
    if(capturedDelay)await new Promise(resolve=>setTimeout(resolve,capturedDelay));
    return reply(capturedResponse,capturedStatus);
   });
@@ -158,8 +158,60 @@ const safe={
   assert.equal(await page.locator('#quotePreview').isVisible(),false);
   console.log('PASS 8: Editing trip mid-process rejects stale search and prevents database write');
 
+  // Batch mode is still mock-only and uses the same authorization + backend gates.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#workspace:not(.hidden)').waitFor();
+  searchDelay=0;searchStatus=200;response=safe;
+  const initialSearches=searches.length,initialRows=rows.length;
+  await page.locator('#processAllDemo').click();
+  await page.getByText('Batch complete: 2 fictional requests saved.',{exact:false}).waitFor();
+  assert.equal(searches.length,initialSearches+2);
+  assert.equal(rows.length,initialRows+2);
+  assert.equal(rows[initialRows].destination,'DXB');
+  assert.equal(rows[initialRows+1].destination,'JNB');
+  assert.equal(rows[initialRows].selected_id,'DEMO-C');
+  assert.equal(rows[initialRows+1].selected_id,'DEMO-A');
+  assert.ok(rows.slice(initialRows).every(row=>row.demo_only===true&&row.has_draft===true&&row.reviewed===undefined));
+  assert.match(await page.locator('#quotePreview').innerText(),/UNREVIEWED DEMO/);
+  console.log('PASS 9: One batch click sequentially searches and saves both fictional samples without approval');
+
+  await page.locator('[data-tab="search"]').click();
+  assert.equal(await page.locator('#processAllDemo').isDisabled(),true);
+  assert.equal(await page.locator('[data-demo-enquiry="DEMO-INBOX-1"]').isDisabled(),true);
+  assert.equal(await page.locator('[data-demo-enquiry="DEMO-INBOX-2"]').isDisabled(),true);
+  assert.equal(rows.length,initialRows+2);
+  console.log('PASS 10: Completed samples are disabled during the session; batch cannot repeat them');
+
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#workspace:not(.hidden)').waitFor();
+  searchStatus=503;
+  const beforeOutage=rows.length;
+  await page.locator('#processAllDemo').click();
+  await page.getByText('Batch stopped after 0 confirmed save(s).',{exact:false}).waitFor();
+  assert.equal(rows.length,beforeOutage);
+  assert.equal(await page.locator('#processAllDemo').isEnabled(),true);
+  console.log('PASS 11: Batch stops without writing or marking completed when the first search fails');
+
+  searchStatus=200;
+  failAtSearchCall=searches.length+2;
+  await page.locator('#processAllDemo').click();
+  await page.getByText('Batch stopped after 1 confirmed save(s).',{exact:false}).waitFor();
+  assert.equal(rows.length,beforeOutage+1);
+  await page.locator('[data-tab="search"]').click();
+  assert.equal(await page.locator('[data-demo-enquiry="DEMO-INBOX-1"]').isDisabled(),true);
+  assert.equal(await page.locator('[data-demo-enquiry="DEMO-INBOX-2"]').isEnabled(),true);
+  console.log('PASS 12: Failure in second item stops batch and preserves first saved item only');
+
+  failAtSearchCall=0;
+  await page.locator('#processAllDemo').click();
+  await page.getByText('Batch complete: 1 fictional requests saved.',{exact:false}).waitFor();
+  assert.equal(rows.length,beforeOutage+2);
+  assert.equal(rows[beforeOutage+1].destination,'JNB');
+  assert.equal(await page.locator('#quotePreview').isVisible(),true);
+  console.log('PASS 13: Retried batch processes only remaining fictional item without a duplicate');
+
   assert.deepEqual(pageErrors,[]);
-  console.log('RESULT: 8/8 fictional inbox Chromium integration tests passed.');
+  console.log('RESULT: 13/13 fictional inbox and batch Chromium integration tests passed.');
  }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
