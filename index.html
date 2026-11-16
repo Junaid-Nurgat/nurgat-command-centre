@@ -121,6 +121,8 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <span class="step">TRAINING ONLY · MOCK INBOX</span>
 <h2 style="margin-top:12px">Sample incoming enquiries</h2>
 <p class="sub">These examples are built into this training page. They are NOT customer messages and are not connected to WhatsApp, email, or any live inbox.</p>
+<button class="btn full" id="processAllDemo" type="button">⚡ Process all remaining fictional examples (1 click)</button>
+<p class="small muted">Runs only the built-in sample enquiries, one after another. Each draft is saved for review; none are approved or sent. Stops if a step fails.</p>
 <div id="demoEnquiryList"></div>
 <p id="demoInboxStatus" class="status" role="status">Select one fictional example to fill the trip, prepare a demo draft and save its snapshot automatically.</p>
 </div>
@@ -193,7 +195,7 @@ async function checkUser(){if(!token?.access_token){setLoggedOut();return}
  if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
  user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');renderDemoInbox();
 }
-function setLoggedOut(){workspaceGeneration++;demoProcessed.clear();demoInboxBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+function setLoggedOut(){workspaceGeneration++;demoProcessed.clear();demoInboxBusy=false;demoBatchBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
  const email=$('email').value.trim(),password=$('password').value;
  const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
@@ -216,8 +218,12 @@ const DEMO_ENQUIRIES=Object.freeze([
  {id:'DEMO-INBOX-2',label:'Sample 2 · Lusaka to Johannesburg',description:'Two adults, return flight, economy · departs in 55 days',origin:'LUN',destination:'JNB',tripType:'ROUND_TRIP',departInDays:55,returnInDays:63,adults:2,children:0,infants:0,cabin:'ECONOMY',preference:'CHEAPEST'}
 ]);
 const demoProcessed=new Set();
-let demoInboxBusy=false;
+let demoInboxBusy=false,demoBatchBusy=false;
 function renderDemoInbox(){
+ const batch=$('processAllDemo');
+ const pending=DEMO_ENQUIRIES.filter(item=>!demoProcessed.has(item.id));
+ batch.disabled=!user||demoInboxBusy||demoBatchBusy||quickDraftBusy||searchBusy||savedBusy||pending.length===0;
+ batch.textContent=demoBatchBusy?'Processing fictional samples…':pending.length===0?'All samples processed in this session':'⚡ Process all remaining fictional examples (1 click)';
  const list=$('demoEnquiryList');list.replaceChildren();
  for(const item of DEMO_ENQUIRIES){
   const row=document.createElement('article');row.className='offer';
@@ -227,14 +233,14 @@ function renderDemoInbox(){
   button.dataset.demoEnquiry=item.id;
   const processed=demoProcessed.has(item.id);
   button.textContent=processed?'Processed in this session':'Process fictional example (1 click)';
-  button.disabled=!user||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy||processed;
+  button.disabled=!user||demoInboxBusy||demoBatchBusy||searchBusy||quickDraftBusy||savedBusy||processed;
   button.addEventListener('click',()=>{void processDemoEnquiry(item.id)});
   row.append(heading,desc,button);list.append(row);
  }
 }
-async function processDemoEnquiry(id){
+async function processDemoEnquiry(id,{batch=false}={}){
  const e=DEMO_ENQUIRIES.find(x=>x.id===id);
- if(!e||!user||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy||demoProcessed.has(id))return;
+ if(!e||!user||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy||demoProcessed.has(id)||(demoBatchBusy&&!batch))return false;
  demoInboxBusy=true;renderDemoInbox();
  const owner=user.id;
  try{
@@ -256,16 +262,44 @@ async function processDemoEnquiry(id){
   const saved=await runQuickDraft();
   if(generation!==workspaceGeneration||user?.id!==owner){
    if(user?.id===owner)note('demoInboxStatus','Fictional sample cancelled because trip details changed. No booking or sending occurred.',true);
-   return;
+   return false;
   }
   if(saved)demoProcessed.add(id);
   note('demoInboxStatus',saved
    ? 'Fictional example processed and its request snapshot saved. Draft remains unreviewed; no messages or bookings.'
    : 'Fictional example could not be fully saved. Review the search and save status; no external enquiry was processed.',!saved);
+  return saved;
  }catch(_err){
   if(user?.id===owner)note('demoInboxStatus','Sample processing stopped safely. No real messages or bookings occurred.',true);
+  return false;
  }finally{demoInboxBusy=false;renderDemoInbox()}
 }
+$('processAllDemo').addEventListener('click',async()=>{
+ if(!user||demoBatchBusy||demoInboxBusy||searchBusy||quickDraftBusy||savedBusy)return;
+ const owner=user.id,remaining=DEMO_ENQUIRIES.filter(item=>!demoProcessed.has(item.id));
+ if(!remaining.length)return;
+ demoBatchBusy=true;renderDemoInbox();
+ let completed=0;
+ try{
+  // Sequential processing protects the one-draft-at-a-time UI state.
+  // Stop on the first failed or unconfirmed save; never auto-approve anything.
+  for(const item of remaining){
+   if(user?.id!==owner)break;
+   const saved=await processDemoEnquiry(item.id,{batch:true});
+   if(!saved)break;
+   completed++;
+  }
+  if(user?.id===owner){
+   const allDone=completed===remaining.length;
+   note('demoInboxStatus',allDone
+    ? 'Batch complete: '+completed+' fictional request(s) prepared and saved. Open Saved to review; none were approved or sent.'
+    : 'Batch stopped after '+completed+' confirmed save(s). Check the current draft and save status; remaining samples can be retried.',!allDone);
+   if(completed>0)note('quoteStatus',allDone
+    ? 'Batch complete: '+completed+' fictional requests saved. Current draft is unreviewed. Open Saved to see them; no customer messages or bookings.'
+    : 'Batch stopped after '+completed+' confirmed save(s). Review current status and retry remaining fictional examples. No customer messages or bookings.');
+  }
+ }finally{demoBatchBusy=false;renderDemoInbox()}
+});
 $('depart').value=isoAfter(35);$('returnDate').value=isoAfter(48);$('depart').min=isoAfter(0);$('returnDate').min=isoAfter(0);
 $('trip').addEventListener('change',()=>{const one=$('trip').value==='ONE_WAY';$('returnField').classList.toggle('hidden',one);$('returnDate').disabled=one;$('returnDate').required=!one;invalidate()});
 $('depart').addEventListener('change',()=>{const d=$('depart').value;$('returnDate').min=d;if($('returnDate').value<=d)$('returnDate').value=''});
