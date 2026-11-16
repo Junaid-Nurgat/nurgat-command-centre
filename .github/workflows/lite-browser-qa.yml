@@ -5,6 +5,8 @@ on:
       - index.html
       - tests/lite-save-browser.test.cjs
       - tests/lite-ai-handoff-browser.test.cjs
+      - staging-handoff.html
+      - tests/staging-smoke-browser.test.cjs
       - .github/workflows/lite-browser-qa.yml
   workflow_dispatch:
 jobs:
@@ -26,3 +28,4 @@ jobs:
         run: |
           node tests/lite-save-browser.test.cjs
           node tests/lite-ai-handoff-browser.test.cjs
+          node tests/staging-smoke-browser.test.cjs

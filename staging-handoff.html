@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nurgat Tours — Secure Staging Connection Test</title>
+<style>
+:root{color-scheme:light;font-family:Inter,"Segoe UI",Arial,sans-serif}body{background:#f4f7fb;color:#142137;margin:0;padding:30px 14px}main{max-width:660px;margin:0 auto}a{color:#19569a;text-decoration:none}a:hover{text-decoration:underline}.card{background:white;padding:28px;border:1px solid #dce3ec;border-radius:18px;box-shadow:0 6px 28px #12263a0c}h1{font-size:clamp(1.35rem,4vw,1.9rem);margin:0 0 12px}p{line-height:1.6}.sub{color:#50627b}.tag{display:inline-block;background:#f2f4f7;border-radius:9px;padding:7px 10px;font-weight:650;font-size:.82rem;color:#394858}button{background:#174a83;border:0;color:white;padding:12px 20px;font-weight:700;border-radius:10px;cursor:pointer;font-size:1rem;width:100%;margin:10px 0}button:disabled{opacity:.6;cursor:wait}.alert{padding:12px;border-radius:10px;background:#f3f6fa;margin-top:16px;white-space:pre-wrap;overflow-wrap:anywhere}.error{background:#fff1ef;color:#862e2d}.success{background:#edfaf2;color:#215a37}pre{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #e4e9f0;border-radius:10px;padding:14px;background:#f8f9fb}.small{font-size:.86rem;color:#56657b}
+</style></head>
+<body><main>
+<p><a href="./index.html">← Back to Nurgat Tours staff dashboard</a></p>
+<section class="card">
+<span class="tag">STAGING ONLY · FICTIONAL DATA · NO BOOKINGS</span>
+<h1>Secure service handoff test</h1>
+<p class="sub">Checks whether your existing staff session can reach the isolated Supabase gateway, which then calls n8n's Header Auth test webhook. No real airline search, quotation, customer message, or booking is possible here.</p>
+<p class="small"><strong>Before clicking:</strong> In another tab, open the staging n8n workflow and press <strong>Listen for test event</strong> in its Webhook node. Return here and run one test within the listening window. Keep this page in the same browser tab you used to sign into the staff dashboard.</p>
+<button id="run" type="button">Run one fictional staging test</button>
+<div id="status" role="status" aria-live="polite" class="alert">Not started. No request has been sent.</div>
+<pre id="result" hidden></pre>
+<p class="small">Only synthetic LUN → DXB travel dates and your already-authenticated session are used. Login tokens are placed only in the request's Authorization header to Supabase, not in the data sent to n8n or displayed here. If you are signed out, return to the dashboard and sign in.</p>
+</section></main>
+<script>
+'use strict';
+const BASE='https://ysakhagnlmhwbbmetjjc.supabase.co';
+const KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH'; // Public client key; not a secret.
+const button=document.getElementById('run'),status=document.getElementById('status'),result=document.getElementById('result');
+function update(msg,type=''){status.textContent=msg;status.className='alert'+(type?' '+type:'')}
+function futureDate(days){const d=new Date(Date.now()+days*86400000);return d.toISOString().slice(0,10)}
+button.addEventListener('click',async()=>{
+ let session;
+ try{session=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
+ const jwt=session?.access_token;
+ if(typeof jwt!=='string'||!jwt.trim()){update('You are not signed in in this tab. Return to the staff dashboard, sign in, then open this page in the same tab.','error');return}
+ button.disabled=true;result.hidden=true;result.textContent='';
+ update('Checking authenticated staging connection…');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+ try{
+  const body={
+   requestId:'STAGE_'+crypto.randomUUID().replaceAll('-',''),
+   request:{
+    origin:'LUN',destination:'DXB',departureDate:futureDate(28),
+    returnDate:null,tripType:'ONE_WAY',adults:1,children:0,infants:0,
+    cabin:'ECONOMY',preference:'BEST'
+   }
+  };
+  const response=await fetch(BASE+'/functions/v1/nurgat-service-handoff-staging',{
+   method:'POST',mode:'cors',cache:'no-store',signal:controller.signal,
+   headers:{'apikey':KEY,'authorization':'Bearer '+jwt,'content-type':'application/json'},
+   body:JSON.stringify(body)
+  });
+  let data=null;try{data=await response.json()}catch{}
+  if(!response.ok)throw Error(data?.message||'Test failed (HTTP '+response.status+').');
+  if(data?.ok!==true||data?.mode!=='STAGING_INTERNAL_ONLY'||data?.status!=='VERIFIED_STAGING_RESPONSE'||
+    data?.providerConnected!==false||data?.customerSendAllowed!==false||
+    data?.bookingAvailable!==false||data?.ticketIssuanceAllowed!==false||
+    typeof data?.plan!=='string'||!data.plan.startsWith('GDS RESEARCH PLAN — NOT CONNECTED'))throw Error('The staging response did not pass safety checks.');
+  update('Success: the secure fictional staging handoff returned an approved, non-bookable plan. No live flight search or booking occurred.','success');
+  result.textContent=data.plan;result.hidden=false;
+ }catch(e){
+  update(e?.name==='AbortError'?'Staging test timed out. Check the n8n test listener and try again.':
+   'Staging test was NOT verified: '+(e?.message||'Network problem')+
+   ' Check the n8n listener, your staff session and the saved service credential.','error');
+ }finally{clearTimeout(timer);button.disabled=false}
+});
+</script>
+</body></html>
