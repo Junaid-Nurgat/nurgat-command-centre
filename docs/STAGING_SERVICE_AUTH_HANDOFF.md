@@ -24,6 +24,13 @@ Supabase code locations (not deployed):
 
 **Never put secrets into GitHub, chat, JavaScript served by GitHub Pages, spreadsheet rows, screenshots or logs.**
 
+A new **unpublished** two-node n8n staging workflow was created for this design:
+- **Name:** `Nurgat Tours — Service-Authenticated Staging Handoff (UNPUBLISHED)`
+- **Workflow ID:** `Gbufqf35yLG8aHl1`
+- **Editor:** https://nurgattourszm.app.n8n.cloud/workflow/Gbufqf35yLG8aHl1
+- **Location:** personal project `Junaid nurgat <nurgattourszm@gmail.com>`
+- **Status:** Not active, Header Auth configured on webhook node, **no credential assigned**. The mock-only Code node validates exactly the fictional staging fixture and returns a locked GDS plan. The new workflow does not call external tools or connect to the GDS.
+
 An authorized n8n administrator must create a **Webhook Header Auth credential**, name `x-nurgat-service-key`, value a fresh independent high-entropy string (at least 32 characters). Configure it on a NEW, unpublished staging webhook with path:
 
 `nurgat-staff-service-auth-staging-v1`
