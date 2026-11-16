@@ -31,10 +31,16 @@ async function authorizeReviewer(jwt) {
     ? user.id : null;
 }
 
+function upstreamError(code) {
+  const error = new Error('Staging request could not be completed.');
+  error.code = code;
+  return error;
+}
+
 async function dispatch(payload, serviceSecret) {
   const configured = Deno.env.get('NURGAT_STAGING_N8N_TEST_URL');
-  // Disallow production webhooks or arbitrary external URLs in this fixture-only code.
-  if (configured !== allowedTestUrl) throw Error('Approved staging endpoint not configured');
+  // Fixed test-only endpoint: never send this service credential to an arbitrary URL.
+  if (configured !== allowedTestUrl) throw upstreamError('STAGING_TEST_URL_MISSING');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
   try {
@@ -47,10 +53,25 @@ async function dispatch(payload, serviceSecret) {
       body: JSON.stringify(payload),
       signal: controller.signal
     });
-    if (!response.ok) throw Error('Staging n8n rejected');
+    // Classify *status codes only*. Never expose upstream bodies, headers, or credentials.
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403)
+        throw upstreamError('STAGING_N8N_AUTH_REJECTED');
+      if (response.status === 404 || response.status === 410)
+        throw upstreamError('STAGING_N8N_LISTENER_NOT_READY');
+      throw upstreamError('STAGING_N8N_HTTP_FAILURE');
+    }
     const body = await response.text();
-    if (body.length > 3600) throw Error('Oversized staging response');
-    return JSON.parse(body);
+    if (body.length > 3600) throw upstreamError('STAGING_N8N_INVALID_RESPONSE');
+    let parsed;
+    try { parsed = JSON.parse(body); }
+    catch { throw upstreamError('STAGING_N8N_INVALID_RESPONSE'); }
+    return parsed;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw upstreamError('STAGING_N8N_TIMEOUT');
+    if (error?.code && typeof error.code === 'string' &&
+        error.code.startsWith('STAGING_')) throw error;
+    throw upstreamError('STAGING_N8N_NETWORK_FAILURE');
   } finally { clearTimeout(timer); }
 }
 
