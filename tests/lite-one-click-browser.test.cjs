@@ -40,7 +40,8 @@ const safe={
     access_token:'FAKE_ISOLATED_STAFF_ACCESS',refresh_token:'FAKE_ISOLATED_REFRESH'
    }));
   });
-  const calls=[];
+  const calls=[],snapshots=[];
+  let posts=0,failCheckOnce=false,failWriteAfterCommitOnce=false;
   let response=safe,status=200,delayMs=0;
   await page.route(BASE+'/**',async route=>{
    const req=route.request(),url=new URL(req.url());
@@ -48,6 +49,26 @@ const safe={
    if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});
    if(url.pathname==='/auth/v1/user')return reply({id:reviewerId});
    if(url.pathname==='/rest/v1/approval_reviewers')return reply([{user_id:reviewerId}]);
+   if(url.pathname==='/rest/v1/lite_saved_requests'){
+    assert.equal(req.headers().authorization,'Bearer FAKE_ISOLATED_STAFF_ACCESS');
+    if(req.method()==='GET'){
+     if(failCheckOnce){failCheckOnce=false;return route.abort('failed')}
+     const idFilter=url.searchParams.get('id');
+     if(idFilter?.startsWith('eq.'))return reply(snapshots.filter(x=>x.id===idFilter.slice(3)).map(x=>({id:x.id})));
+     return reply(snapshots);
+    }
+    assert.equal(req.method(),'POST');
+    const row=req.postDataJSON();
+    assert.equal(row.demo_only,true);
+    assert.equal(row.has_draft,true);
+    assert.equal(typeof row.id,'string');
+    assert.equal('customerName' in row,false);
+    assert.equal('staffToken' in row,false);
+    assert.equal(snapshots.some(x=>x.id===row.id),false,'same snapshot should not POST twice');
+    snapshots.push(row);posts++;
+    if(failWriteAfterCommitOnce){failWriteAfterCommitOnce=false;return route.abort('failed')}
+    return reply({});
+   }
    assert.equal(url.pathname,'/functions/v1/nurgat-flight-research-demo');
    assert.equal(req.method(),'POST');
    assert.equal(req.headers().authorization,'Bearer FAKE_ISOLATED_STAFF_ACCESS');
@@ -64,27 +85,42 @@ const safe={
   await page.locator('#workspace:not(.hidden)').waitFor();
   await page.locator('#autoDraft').click();
   await page.locator('#quotePreview:not(.hidden)').waitFor();
+  await page.getByText('Auto-saved a FICTIONAL request snapshot.',{exact:false}).waitFor();
   assert.equal(calls.length,1,'one click should make one search');
+  assert.equal(snapshots.length,1,'one click should also save the snapshot');
+  assert.equal(posts,1);
+  assert.equal(snapshots[0].selected_id,'DEMO-C');
+  assert.equal(snapshots[0].demo_only,true);
   assert.match(await page.locator('#quotePreview').innerText(),/Sample Air C/);
   assert.match(await page.locator('#quotePreview').innerText(),/FICTIONAL FLIGHT — NOT A CUSTOMER QUOTE/);
   assert.match(await page.locator('#quotePreview').innerText(),/CUSTOMER DELIVERY: LOCKED. BOOKING: DISABLED./);
   assert.match(await page.locator('#quotePreview').innerText(),/UNREVIEWED DEMO/);
   assert.equal(await page.locator('#reviewQuote').isEnabled(),true);
-  console.log('PASS 1: One click prepares a top-ranked fictional draft, unreviewed and non-sendable');
+  console.log('PASS 1: One click prepares and auto-saves an unreviewed, non-sendable fictional draft');
+
+  await page.locator('#saveRequest').click();
+  await page.getByText('Saved to your account.',{exact:false}).waitFor();
+  assert.equal(posts,1);
+  assert.equal(snapshots.length,1);
+  console.log('PASS 2: Manual Save on the same fictional snapshot does not create duplicate rows');
 
   await page.locator('#reviewQuote').click();
   assert.match(await page.locator('#quotePreview').innerText(),/REVIEWED DEMO ONLY/);
   assert.match(await page.locator('#quotePreview').innerText(),/CUSTOMER DELIVERY: LOCKED/);
-  console.log('PASS 2: Manual review remains a separate step and never unlocks customer sending');
+  assert.equal(snapshots[0].reviewed,undefined);
+  console.log('PASS 3: Manual review remains separate, not persisted and never unlocks customer sending');
 
   await page.locator('[data-tab="search"]').click();
   await page.locator('#preference').selectOption('CHEAPEST');
   await page.locator('#autoDraft').click();
   await page.locator('#quotePreview:not(.hidden)').waitFor();
+  await page.getByText('Auto-saved a FICTIONAL request snapshot.',{exact:false}).waitFor();
   assert.equal(calls.length,2);
+  assert.equal(snapshots.length,2);
+  assert.equal(snapshots[1].selected_id,'DEMO-A');
   assert.match(await page.locator('#quotePreview').innerText(),/Sample Air A/);
   assert.match(await page.locator('#quotePreview').innerText(),/UNREVIEWED DEMO/);
-  console.log('PASS 3: One-click draft follows user preference and resets previous review');
+  console.log('PASS 4: Changing preference auto-saves a distinct sample and resets review');
 
   response={...safe,bookingAvailable:true};
   await page.locator('[data-tab="search"]').click();
@@ -94,7 +130,8 @@ const safe={
   assert.equal(await page.locator('#quotePreview').isVisible(),false);
   assert.equal(calls.length,3);
   assert.equal(await page.locator('#autoDraft').isEnabled(),true);
-  console.log('PASS 4: Unsafe server response fails closed with no prepared draft');
+  assert.equal(snapshots.length,2);
+  console.log('PASS 5: Unsafe server response fails closed with no draft or saved snapshot');
 
   response=safe;status=503;
   await page.locator('#autoDraft').click();
@@ -102,7 +139,8 @@ const safe={
   assert.equal(calls.length,4);
   assert.equal(await page.locator('#quotePreview').isVisible(),false);
   assert.equal(await page.locator('#autoDraft').isEnabled(),true);
-  console.log('PASS 5: Server outage leaves no draft; one-click control can be retried');
+  assert.equal(snapshots.length,2);
+  console.log('PASS 6: Search outage leaves no draft or snapshot; control can be retried');
 
   status=200;delayMs=300;
   const before=calls.length;
@@ -114,10 +152,42 @@ const safe={
   assert.equal(calls.length,before+1);
   assert.equal(await page.locator('#quotePreview').isVisible(),false);
   assert.equal(await page.locator('#autoDraft').isEnabled(),true);
-  console.log('PASS 6: Editing the trip while the request runs cancels the stale draft safely');
+  assert.equal(snapshots.length,2);
+  console.log('PASS 7: Mid-search trip edits cancel stale drafts and database writes');
+
+  delayMs=0;status=200;response=safe;
+  failCheckOnce=true;
+  await page.locator('#autoDraft').click();
+  await page.getByText('Could not verify saved status.',{exact:false}).waitFor();
+  await page.getByText('automatic saving was not confirmed.',{exact:false}).waitFor();
+  assert.equal(await page.locator('#quotePreview').isVisible(),true);
+  assert.match(await page.locator('#quotePreview').innerText(),/UNREVIEWED DEMO/);
+  assert.equal(snapshots.length,2);
+  console.log('PASS 8: Autosave lookup failure leaves the unreviewed draft and no database write');
+
+  await page.locator('#saveRequest').click();
+  await page.getByText('Saved to your account.',{exact:false}).waitFor();
+  assert.equal(snapshots.length,3);
+  assert.equal(snapshots[2].selected_id,'DEMO-C');
+  console.log('PASS 9: Staff can retry an autosave failure manually without losing the draft');
+
+  await page.locator('[data-tab="search"]').click();
+  await page.locator('#preference').selectOption('FEWEST_STOPS');
+  failWriteAfterCommitOnce=true;
+  const beforeLostWrite=posts;
+  await page.locator('#autoDraft').click();
+  await page.getByText('Save could not be confirmed.',{exact:false}).waitFor();
+  assert.equal(snapshots.length,4,'server committed one row before reply was lost');
+  assert.equal(posts,beforeLostWrite+1);
+  assert.equal(await page.locator('#quotePreview').isVisible(),true);
+  await page.locator('#saveRequest').click();
+  await page.getByText('Saved to your account.',{exact:false}).waitFor();
+  assert.equal(snapshots.length,4);
+  assert.equal(posts,beforeLostWrite+1);
+  console.log('PASS 10: Lost POST reply retry finds the original saved UUID; no duplicate');
 
   assert.deepEqual(pageErrors,[]);
-  console.log('RESULT: 6/6 one-click fictional drafting browser tests passed.');
+  console.log('RESULT: 10/10 one-click auto-save browser tests passed.');
  }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
