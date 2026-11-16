@@ -1,62 +1,77 @@
 # Nurgat Tours — Flight API Access Handoff
 
-Updated: 15 November 2026
+**Updated:** 16 November 2026  
+**Stage:** Waiting for an **already-arranged API team meeting** (expected during 16–22 November 2026). The API provider/product is **not yet confirmed**. Do not initiate a duplicate trial application without agreement from the agency owner.
 
-## Current position
+**Useful meeting guide:** [API Team Meeting Worksheet](GDS_PROVIDER_MEETING_WORKSHEET.md)
 
-**Stage: sandbox API enquiry ready to prepare; not yet submitted.**
-The Lite Command Centre is an internal training tool, **not** an operational ticketing system.
-- GitHub pull requests #3–#5 established automated browser QA, including 14/14 passing browser tests with mocked Supabase.
-- Staff login and fictional flight search exist in the training interface.
-- Real flight inventory, fares, payments, bookings, ticket issuance and customer delivery are **disabled**.
-- Production staff permissions, end-to-end authenticated n8n integration, provider-specific contracts and live data policies still require separate validation.
+## What is working today
 
-## Candidate provider: Travelport TripServices (trial / pre-production first)
+- A staff-only **Command Centre Lite** training interface with fictional flights, fares and saved requests.
+- Offline browser checks and an internal **provider-neutral read-only flight-search adapter** with tests.
+- A separate, unpublished service-authenticated staging handoff has been developed. Some steps reached n8n successfully, but the complete HTTP response test was **not verified**; its troubleshooting is intentionally **paused** to prioritize API readiness.
+- All real supplier search, customer quotations, payment, messaging, bookings, PNR creation and ticket issuance remain **disabled**.
 
-Official starting points:
-- Trial-access page: https://my.travelport.com/v2/get-trial
-- Getting started: https://developer.travelport.com/docs/getting-started
-- Authentication: https://developer.travelport.com/docs/getting-started/authentication
-- Developer toolkits: https://developer.travelport.com/resources/devkits-and-downloads
-- Sales enquiry: https://www.travelport.com/get-travelport
-- Certification before production: https://developer.travelport.com/docs/getting-started/ready-to-certify
+## What the agency has — and does not yet have
 
-Travelport states trial credentials can be requested, and provisioned customers receive credentials with point-of-sale/access-group information. Real-time calls need provider-issued credentials. Production access is contracted and certified, not automatic.
+- **Confirmed:** Staff use Amadeus Selling Platform Connect and Travelport Smartpoint desktop software.
+- **Not confirmed:** Supplier flight API access, credentials, permission to run automated searches, rate limits, or production certification.
+- **Already in motion:** The agency contact has arranged an API discussion in the week of 16 November 2026.
+- **Unknown:** Which API team/product will actually provide integration, the meeting date, costs and timeline.
 
-**Alternative:** Amadeus Enterprise API access is request-based. The old Amadeus self-service portal was shut down on 17 July 2026. See https://developers.amadeus.com/api-catalog .
+**Important:** A staff login to desktop GDS tools does not by itself authorize an API integration.
 
-## What the agency owner/authorized adult needs to decide
+## What to do at the meeting
 
-1. Confirm that Nurgat Tours wants to evaluate **Travelport TripServices** (rather than an existing GDS provider).
-2. Identify the authorized agency contact who may apply and handle provider agreements.
-3. Confirm whether Nurgat Tours already has a Travelport/other GDS account, PCC, and applicable supplier relationships; ask the provider what is required if not.
-4. Identify the intended scope: **flight search + pricing first**. Booking and ticketing remain off until explicit approval, business arrangements, and certification.
-5. Review trial terms, costs, allowed use, response limits, regions and data-handling requirements.
-6. Submit the provider trial or sales enquiry **only with the agency owner's authorization**. Do not enter personal, payment or customer credentials in GitHub or chat.
+Use [the one-page-style question worksheet](GDS_PROVIDER_MEETING_WORKSHEET.md). Prioritize:
 
-## Technical work while API access is pending
+1. Confirm the **provider/product name** and official developer documentation.
+2. Ask whether Nurgat Tours can obtain **authorized sandbox/test API access** and which existing agency agreements are required.
+3. Confirm which **read-only flight search and pricing operations** are supported, including fare expiry, baggage, taxes, currency and repricing.
+4. Request **secure instructions for credentials**, usage limits and troubleshooting; **never email or paste actual credentials into a public repository or chat**.
+5. Review **fees, contract terms, allowed regions, certification and security obligations**.
+6. Record the next owner-approved action, technical contact and expected access timeline **in private agency records**.
 
-- Document adapter fields: itinerary input, offer ID, totals/currency, availability, conditions, quote expiry and supplier provenance.
-- Keep distinct environments: fictional training, provider sandbox/pre-production, production.
-- Store provider credentials server-side only (for example, secured backend configuration); never in a public GitHub Pages frontend, commits or screenshots.
-- Implement read-only test-mode search and pricing first. Enforce rate limits, retries, structured errors, trace IDs and logs with redacted sensitive information.
-- Require a real provider-confirmed fare and supplier rules before any customer quotation.
-- Human approval must be linked to the exact quote revision. No AI-initiated bookings, payments, ticket issuance, or customer messaging before separate contractual approval and production tests.
-- Complete end-to-end authorization/tenant segregation and n8n handoff tests before expanding.
-- Preserve the existing **CUSTOMER DELIVERY: LOCKED / BOOKING: DISABLED** controls until every production gate is met.
+An API meeting is an information-gathering step, not authorization to turn on bookings or customer communication.
 
-## Handoff status
+## After the meeting — proposed implementation
 
-| Milestone | Status |
+**Stage 1: Sandbox and read-only search.** Agency owner approves chosen provider and terms. Connect one provider-specific sandbox transport to `api/flight-search-adapter.mjs` inside an authenticated server environment (not the public GitHub Pages UI). Normalize sample provider offers using official docs; test errors, timeouts, allowed data and rate limits.
+
+**Stage 2: Verification and internal review.** Establish price/availability revalidation, currency/taxes, supplier rules, trace IDs, redacted monitoring, approval of each quote version and stable staff permissions. Confirm end-to-end authentication and monitoring. Previously paused staging response diagnostics can be revisited when the chosen API integration requires it.
+
+**Stage 3: Operational use only after a new approval.** The agency and provider must separately approve any live production use, contractual fees, certification, customer-data handling, customer messaging or ticketing. Do not equate a sandbox result with a bookable fare.
+
+## Status ledger
+
+| Item | Status |
 | --- | --- |
-| Lite training-mode reliability QA | **14/14 mocked-browser tests passed** |
-| GitHub browser QA workflow | Implemented |
-| Agency owner selects provider / approves enquiry | **Pending** |
-| Trial request submitted | **Not submitted** |
-| Trial or pre-production credentials received | **Not received** |
-| Provider integration in a non-production backend | **Not started** |
-| Real customer bookings / ticket issuance | **Disabled** |
+| Training-mode staff UI | Built; fictional-only |
+| Provider-neutral backend search adapter | Built and offline-tested; not connected |
+| Agency API-team meeting | Arranged, expected 16–22 Nov 2026 |
+| Specific provider/product | **Not confirmed** |
+| Provider documentation and sandbox credentials | **Not received** |
+| Commercial terms and approval | **Not confirmed** |
+| Isolated staging handoff | Built; final response validation not completed; paused |
+| Live flight search | **Disabled** |
+| Customer messages / bookings / ticket issuance | **Disabled** |
 
-**Next external action:** Agency owner or nominated authorized staff should review Travelport's trial page and sales/contact options, then decide whether to apply. An API response or credentials must not be pasted into chat or committed to source control.
+## Provider references — background only
 
-References reviewed 15 November 2026: Travelport official Getting Started, Authentication, DevKits, Certification; Amadeus Enterprise portal.
+Existing agency systems suggest two possible companies, but **neither has been selected as the API supplier**:
+
+- Travelport Developer Centre: https://developer.travelport.com/docs/getting-started
+- Travelport authentication: https://developer.travelport.com/docs/getting-started/authentication
+- Amadeus developer catalogue: https://developers.amadeus.com/api-catalog
+
+Do **not** apply for a separate trial solely because these links are listed. First use the agency's scheduled API-team meeting and verify the current, official terms.
+
+## Security rules that stay in place
+
+- Do not use real passenger details during development or tests.
+- Store supplier secrets only in authorized, secure backend credential storage.
+- Do not paste tokens, provider account identifiers, contracts or staff login credentials into GitHub, screenshots or chat.
+- Do not silently convert the training demo's invented prices to real customer quotations.
+- The customer delivery and booking controls remain locked until a separately authorized production review.
+
+**Next action:** Attend the scheduled provider meeting. Gather a safe, non-sensitive summary of the provider name, documentation, allowed sandbox scope, costs and timeline. The developer can then choose the correct implementation steps without guessing.
