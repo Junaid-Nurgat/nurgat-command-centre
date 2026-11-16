@@ -132,7 +132,20 @@ test('9: missing service credential fails closed, without staff JWT fallback',as
   const {handle,calls}=make({serviceCredential:()=>undefined});
   const result=await read(await handle(req()));
   assert.equal(result.status,503);
-  assert.match(result.body.message,/not configured/);
+  assert.equal(result.body.code,'STAGING_SECRET_MISSING');
+  assert.match(result.body.message,/cannot find NURGAT_STAGING_SERVICE_KEY/);
+  assert.equal(calls.length,0);
+});
+
+test('9b: too-short service credential reports length threshold without leaking secret',async()=>{
+  const shortSecret='PRIVATE_TEST_ONLY_SHORT';
+  const {handle,calls}=make({serviceCredential:()=>shortSecret});
+  const result=await read(await handle(req()));
+  assert.equal(result.status,503);
+  assert.equal(result.body.code,'STAGING_SECRET_TOO_SHORT');
+  assert.match(result.body.message,/at least 32 characters/);
+  assert.equal(JSON.stringify(result.body).includes(shortSecret),false);
+  assert.equal('actualLength' in result.body,false);
   assert.equal(calls.length,0);
 });
 
