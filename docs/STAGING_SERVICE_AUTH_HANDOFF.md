@@ -20,6 +20,17 @@ Supabase code locations (not deployed):
 - `tests/staging-service-auth.test.mjs` — 14 offline defensive contract cases, no network.
 - `.github/workflows/staging-service-auth.yml` — automatic PR checks.
 
+## Verified staging workflow checks — 16 November 2026
+
+We executed **real n8n manual workflow tests using only pinned fictional Webhook input**, not public HTTP calls:
+
+- Execution `156` — **PASS**: accepted the fixed fictional single-adult LUN → DXB one-way request and returned `GDS RESEARCH PLAN — NOT CONNECTED` with all customer, booking and ticketing controls false.
+- Execution `157` — **PASS (expected rejection)**: identical request with `bookingAvailable:true` failed with `Unsafe service flags`.
+- Verified the workflow is **unpublished** and its Webhook node has `authentication: headerAuth`, but **no Header Auth credential is assigned yet**.
+- Applied and confirmed execution settings: `saveExecutionProgress:false`, `saveManualExecutions:false`, `saveDataErrorExecution:none`, `saveDataSuccessExecution:none`, `executionTimeout:30` seconds.
+
+**Important limitation:** Pinned manual tests bypass inbound Webhook Header Auth and do not confirm a network-level secure connection. A separate credential setup and real authorized staging HTTP test are still required. They do not prove n8n published-service behavior or production readiness.
+
 ## Configuration after agency-owner authorization
 
 **Never put secrets into GitHub, chat, JavaScript served by GitHub Pages, spreadsheet rows, screenshots or logs.**
