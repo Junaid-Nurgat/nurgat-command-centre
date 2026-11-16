@@ -164,7 +164,7 @@ const safe={
   searchDelay=0;searchStatus=200;response=safe;
   const initialSearches=searches.length,initialRows=rows.length;
   await page.locator('#processAllDemo').click();
-  await page.getByText('Batch complete: 2 fictional requests saved.',{exact:false}).waitFor();
+  await page.locator('#quoteStatus').filter({hasText:'Batch complete: 2 fictional requests saved.'}).waitFor();
   assert.equal(searches.length,initialSearches+2);
   assert.equal(rows.length,initialRows+2);
   assert.equal(rows[initialRows].destination,'DXB');
@@ -195,7 +195,7 @@ const safe={
   searchStatus=200;
   failAtSearchCall=searches.length+2;
   await page.locator('#processAllDemo').click();
-  await page.getByText('Batch stopped after 1 confirmed save(s).',{exact:false}).waitFor();
+  await page.locator('#quoteStatus').filter({hasText:'Batch stopped after 1 confirmed save(s).'}).waitFor();
   assert.equal(rows.length,beforeOutage+1);
   await page.locator('[data-tab="search"]').click();
   assert.equal(await page.locator('[data-demo-enquiry="DEMO-INBOX-1"]').isDisabled(),true);
@@ -204,7 +204,7 @@ const safe={
 
   failAtSearchCall=0;
   await page.locator('#processAllDemo').click();
-  await page.getByText('Batch complete: 1 fictional request saved.',{exact:false}).waitFor();
+  await page.locator('#quoteStatus').filter({hasText:'Batch complete: 1 fictional request saved.'}).waitFor();
   assert.equal(rows.length,beforeOutage+2);
   assert.equal(rows[beforeOutage+1].destination,'JNB');
   assert.equal(await page.locator('#quotePreview').isVisible(),true);
