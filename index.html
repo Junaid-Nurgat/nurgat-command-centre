@@ -124,7 +124,9 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <div class="cols"><label class="field">Departure<input id="depart" required type="date"></label><label class="field" id="returnField">Return<input id="returnDate" type="date" required></label></div>
 <div class="cols"><label class="field">Adults<input id="adults" type="number" min="1" max="9" value="1" required></label><label class="field">Children<input id="children" type="number" min="0" max="8" value="0" required></label><label class="field">Infants<input id="infants" type="number" min="0" max="9" value="0" required></label><label class="field">Cabin<select id="cabin"><option value="ECONOMY">Economy</option><option value="PREMIUM_ECONOMY">Premium economy</option><option value="BUSINESS">Business</option><option value="FIRST">First</option></select></label></div>
 <label class="field">Priority<select id="preference"><option value="BEST">Best balance</option><option value="CHEAPEST">Lowest sample price</option><option value="FASTEST">Shortest journey</option><option value="FEWEST_STOPS">Fewest stops</option></select></label>
-<button class="btn full" id="searchButton" type="submit">Find sample flights →</button>
+<button class="btn full" id="autoDraft" type="button">⚡ Auto-prepare test draft (1 click)</button>
+<p class="small muted">Automatically compares fictional flights, picks the highest-ranked sample for your selected priority, and prepares an <strong>unreviewed</strong> draft. No real flights or customer sending.</p>
+<button class="btn full alt" id="searchButton" type="submit">Compare samples manually →</button>
 </form><p id="searchStatus" class="status" role="status"></p>
 </div></section>
 <section id="step-results" class="stepview hidden">
@@ -153,6 +155,7 @@ const KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH';
 const $=id=>document.getElementById(id);
 const DAY=86400000;
 let workspaceGeneration=0,savedBusy=false,savedOffset=0,savedRows=[],pendingSave=null;
+let searchBusy=false,quickDraftBusy=false;
 let token=null,user=null,offers=[],selected=null,quote=null,markup=0,searchContext=null;
 try{token=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
 const note=(id,msg,error=false)=>{$(id).textContent=msg;$(id).classList.toggle('error',error)};
@@ -241,8 +244,11 @@ $('markupExact').addEventListener('change',e=>setMarkup(e.target.value));
 $('nextQuote').addEventListener('click',()=>tab('quote'));
 $('searchForm').addEventListener('submit',e=>{e.preventDefault();searchFlights();});
 async function searchFlights(openResults=true){
- const generation=workspaceGeneration,owner=user?.id;if(!user){note('searchStatus','Please sign in.',true);return}
- $('searchButton').disabled=true;note('searchStatus','Checking secure demo…');
+ if(searchBusy)return false;
+ const generation=workspaceGeneration,owner=user?.id;if(!user){note('searchStatus','Please sign in.',true);return false}
+ searchBusy=true;
+ $('searchButton').disabled=true;$('autoDraft').disabled=true;
+ note('searchStatus','Checking secure demo…');
  try{
   const x=searchData();const data=await call('nurgat-flight-research-demo',x);
   if(generation!==workspaceGeneration||user?.id!==owner)return false;
@@ -255,7 +261,7 @@ async function searchFlights(openResults=true){
   options.sort((a,b)=>p==='FASTEST'?a.durationMinutes-b.durationMinutes:p==='FEWEST_STOPS'?a.stops-b.stops:p==='CHEAPEST'?a.price-b.price:(a.price/1000+a.durationMinutes/1000+a.stops*.27)-(b.price/1000+b.durationMinutes/1000+b.stops*.27));
   offers=options;searchContext=x;selected=null;quote=null;note('searchStatus','Three fictional flights found. No real GDS used.');redraw();if(openResults)tab('results');return true;
  }catch(err){if(generation!==workspaceGeneration||user?.id!==owner)return false;offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true);return false}
- finally{$('searchButton').disabled=false}
+ finally{searchBusy=false;$('searchButton').disabled=false;$('autoDraft').disabled=quickDraftBusy}
 }
 function quoteText(q){return [
  'NURGAT TOURS — INTERNAL TRAINING ONLY',
@@ -280,11 +286,27 @@ function renderQuote(){
  $('quotePreview').classList.toggle('hidden',!quote);$('quotePreview').textContent=quote?quoteText(quote):'';
  note('quoteStatus',quote?(quote.reviewed?'Internally reviewed TEST ONLY. Customer sending remains locked.':'Test draft prepared. Not reviewed and not customer-ready.'):'No internal draft yet.');
 }
-$('makeQuote').addEventListener('click',()=>{
- if(!user||!searchContext||!selected){note('quoteStatus','Select a fictional flight first.',true);return}
- const f=offers.find(o=>o.id===selected);if(!f)return;
+function prepareTestDraft(){
+ if(!user||!searchContext||!selected){note('quoteStatus','Select a fictional flight first.',true);return false}
+ const f=offers.find(o=>o.id===selected);if(!f)return false;
  quote={reference:'LITE-TEST-'+Date.now().toString(36).toUpperCase(),reviewed:false,id:f.id,airline:f.airline,price:f.price,stops:f.stops,durationMinutes:f.durationMinutes,markup,route:searchContext.origin+' → '+searchContext.destination,departure:searchContext.departureDate,returnDate:searchContext.returnDate,passengers:searchContext.adults+' adult(s), '+searchContext.children+' child(ren), '+searchContext.infants+' infant(s)',cabin:searchContext.cabin};
  renderQuote();
+ return true;
+}
+$('makeQuote').addEventListener('click',prepareTestDraft);
+$('autoDraft').addEventListener('click',async()=>{
+ if(quickDraftBusy||searchBusy||!user)return;
+ quickDraftBusy=true;$('autoDraft').disabled=true;
+ const generation=workspaceGeneration,owner=user.id;
+ try{
+  const ok=await searchFlights(false);
+  // Never create an old draft if staff switched accounts or changed the form mid-request.
+  if(!ok||generation!==workspaceGeneration||user?.id!==owner||!offers.length)return;
+  selected=offers[0].id; // Already sorted by requested priority using validated fictional prices.
+  if(!prepareTestDraft())return;
+  redraw();tab('quote');
+  note('quoteStatus','Auto-prepared using the top-ranked FICTIONAL sample. Review the draft yourself; no customer sending or booking.');
+ }finally{quickDraftBusy=false;$('autoDraft').disabled=false}
 });
 $('reviewQuote').addEventListener('click',()=>{if(quote){quote.reviewed=true;renderQuote()}});
 $('discardQuote').addEventListener('click',()=>{quote=null;renderQuote()});
