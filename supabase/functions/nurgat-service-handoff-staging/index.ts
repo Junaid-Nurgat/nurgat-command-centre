@@ -31,8 +31,8 @@ async function authorizeReviewer(jwt) {
     ? user.id : null;
 }
 
-function upstreamError(code) {
-  const error = new Error('Staging request could not be completed.');
+function upstreamError(code: string) {
+  const error = new Error('Staging request could not be completed.') as Error & {code: string};
   error.code = code;
   return error;
 }
@@ -68,9 +68,9 @@ async function dispatch(payload, serviceSecret) {
     catch { throw upstreamError('STAGING_N8N_INVALID_RESPONSE'); }
     return parsed;
   } catch (error) {
-    if (error?.name === 'AbortError') throw upstreamError('STAGING_N8N_TIMEOUT');
-    if (error?.code && typeof error.code === 'string' &&
-        error.code.startsWith('STAGING_')) throw error;
+    const known = error as {name?: unknown; code?: unknown} | null;
+    if (known?.name === 'AbortError') throw upstreamError('STAGING_N8N_TIMEOUT');
+    if (typeof known?.code === 'string' && known.code.startsWith('STAGING_')) throw error;
     throw upstreamError('STAGING_N8N_NETWORK_FAILURE');
   } finally { clearTimeout(timer); }
 }
