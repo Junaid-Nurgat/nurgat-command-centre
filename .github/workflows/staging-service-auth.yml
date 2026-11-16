@@ -1,0 +1,22 @@
+name: Nurgat staging service-auth security tests
+on:
+  pull_request:
+    paths:
+      - supabase/functions/_shared/staging-handoff.mjs
+      - supabase/functions/nurgat-service-handoff-staging/**
+      - tests/staging-service-auth.test.mjs
+      - .github/workflows/staging-service-auth.yml
+  workflow_dispatch:
+jobs:
+  staging-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated staff-to-service authentication contract tests
+        run: node --test tests/staging-service-auth.test.mjs
