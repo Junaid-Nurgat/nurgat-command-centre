@@ -85,7 +85,7 @@ const safe={
   console.log('PASS 1: Clearly labeled mock inbox displays only two built-in fictional samples');
 
   await page.locator('[data-demo-enquiry="DEMO-INBOX-1"]').click();
-  await page.getByText('Fictional example processed and its request snapshot saved.',{exact:false}).waitFor();
+  await page.getByText('Fictional draft prepared and request snapshot auto-saved.',{exact:false}).waitFor();
   assert.equal(searches.length,1);
   assert.deepEqual({origin:searches[0].origin,destination:searches[0].destination,tripType:searches[0].tripType,adults:searches[0].adults,returnDate:searches[0].returnDate},
    {origin:'LUN',destination:'DXB',tripType:'ONE_WAY',adults:1,returnDate:null});
@@ -104,7 +104,7 @@ const safe={
   console.log('PASS 3: Processed fixture is disabled; repeated manual Save is idempotent');
 
   await page.locator('[data-demo-enquiry="DEMO-INBOX-2"]').click();
-  await page.getByText('Fictional example processed and its request snapshot saved.',{exact:false}).waitFor();
+  await page.getByText('Fictional draft prepared and request snapshot auto-saved.',{exact:false}).waitFor();
   assert.equal(searches.length,2);
   assert.equal(searches[1].origin,'LUN');
   assert.equal(searches[1].destination,'JNB');
@@ -138,7 +138,7 @@ const safe={
 
   searchStatus=200;lostPostReply=true;
   await page.locator('[data-demo-enquiry="DEMO-INBOX-1"]').click();
-  await page.getByText('Fictional example could not be fully saved.',{exact:false}).waitFor();
+  await page.getByText('automatic saving was not confirmed.',{exact:false}).waitFor();
   assert.equal(rows.length,3,'server actually saved despite lost HTTP reply');
   assert.equal(await page.locator('#quotePreview').isVisible(),true);
   const countBeforeRetry=postCount;
