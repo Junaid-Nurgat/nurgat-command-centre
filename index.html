@@ -170,6 +170,15 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <div id="monitorIssues"></div>
 <button class="btn ghost" id="clearMonitorIssues" type="button" disabled>Clear local issue notices</button>
 <p class="small muted">Clearing notices does not fix a failed request or change saved data. Check the Search or Saved tab to retry safely.</p>
+</div>
+<div class="card" id="n8nReadOnlySnapshot">
+<span class="step">SECURE BRIDGE · READ ONLY</span>
+<h2 style="margin-top:12px">Latest n8n daily snapshot</h2>
+<p class="sub">Staff-only summary from n8n's daily monitoring table, once agency-authorized server credentials are configured. This is not a live all-clear or raw incident feed.</p>
+<p id="n8nSnapshotStatus" class="status" role="status">Connection not yet verified. Open Issues to check availability.</p>
+<div id="n8nSnapshotSummary" class="quote hidden"></div>
+<button class="btn alt" id="refreshN8nSnapshot" type="button">Refresh secure snapshot</button>
+<p class="small muted">Only timestamps and numeric counts are displayed. Nothing here can change workflows, email customers or approve bookings.</p>
 </div></section>
 </div></main>
 <script>
@@ -181,6 +190,55 @@ const DAY=86400000;
 let workspaceGeneration=0,savedBusy=false,savedOffset=0,savedRows=[],pendingSave=null;
 let searchBusy=false,quickDraftBusy=false;
 let token=null,user=null,offers=[],selected=null,quote=null,markup=0,searchContext=null;
+let liveMonitorBusy=false,lastLiveMonitorCheck=0;
+async function loadN8nSnapshot(force=false){
+ if(!user||liveMonitorBusy||(!force&&Date.now()-lastLiveMonitorCheck<60000))return;
+ liveMonitorBusy=true;lastLiveMonitorCheck=Date.now();
+ const owner=user.id;
+ $('refreshN8nSnapshot').disabled=true;
+ $('n8nSnapshotSummary').textContent='';
+ $('n8nSnapshotSummary').classList.add('hidden');
+ note('n8nSnapshotStatus','Checking the secure read-only monitoring bridge…');
+ try{
+  let res=await request('/functions/v1/nurgat-monitor-readonly');
+  if(res.error?.code===401&&await refresh())res=await request('/functions/v1/nurgat-monitor-readonly');
+  if(user?.id!==owner)return;
+  if(res.error){
+   if(res.error.code===503)note('n8nSnapshotStatus','Secure n8n snapshot unavailable or not connected. Agency-approved server access may still be needed.',true);
+   else if(res.error.code===403||res.error.code===401)note('n8nSnapshotStatus','Not authorized to view monitoring. Please sign in as approved staff.',true);
+   else note('n8nSnapshotStatus','Could not read n8n monitoring snapshot. No status was assumed.',true);
+   return;
+  }
+  const x=res.data;
+  if(x?.ok!==true||x?.mode!=='READ_ONLY_MONITOR'||x?.connected!==true||
+     x?.noCustomerData!==true||x?.actionsAllowed!==false||
+     typeof x.hasSnapshot!=='boolean')throw Error('Invalid monitor contract');
+  if(!x.hasSnapshot){
+   note('n8nSnapshotStatus','Secure bridge connected, but no daily snapshot has been recorded yet.');
+   return;
+  }
+  if(!Number.isSafeInteger(x.failures24h)||x.failures24h<0||
+     !Number.isSafeInteger(x.unreviewedIncidents)||x.unreviewedIncidents<0||
+     !Number.isSafeInteger(x.knownTestEvents)||x.knownTestEvents<0||
+     typeof x.checkedAt!=='string'||!Number.isFinite(Date.parse(x.checkedAt))||
+     typeof x.fresh!=='boolean')throw Error('Invalid monitor values');
+  const date=new Date(x.checkedAt).toLocaleString();
+  note('n8nSnapshotStatus',x.fresh
+   ? 'Read-only n8n daily snapshot retrieved. Counts are last recorded, not live health certification.'
+   : 'Last n8n snapshot is STALE or dated incorrectly. Do not assume the workflows are healthy.',!x.fresh);
+  $('n8nSnapshotSummary').textContent=
+   'Snapshot recorded: '+date+
+   '\\nUnreviewed incidents in snapshot: '+x.unreviewedIncidents+
+   '\\nFailures recorded in 24-hour count: '+x.failures24h+
+   '\\nKnown test events: '+x.knownTestEvents+
+   '\\nThis snapshot cannot search flights, send messages, or issue tickets.';
+  $('n8nSnapshotSummary').classList.remove('hidden');
+ }catch{
+  if(user?.id===owner)note('n8nSnapshotStatus','Monitoring response did not pass safety checks. No health status was assumed.',true);
+ }finally{liveMonitorBusy=false;$('refreshN8nSnapshot').disabled=false}
+}
+$('refreshN8nSnapshot').addEventListener('click',()=>{void loadN8nSnapshot(true)});
+
 const demoIssues=[]; // Safe session-only notices, never raw upstream errors.
 const ISSUE_COPY=Object.freeze({
  SEARCH:'Fictional flight search failed or was rejected. Check the Search tab and retry when ready.',
@@ -238,7 +296,7 @@ async function checkUser(){if(!token?.access_token){setLoggedOut();return}
  if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
  user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');renderDemoInbox();renderDemoIssues();
 }
-function setLoggedOut(){workspaceGeneration++;demoIssues.length=0;renderDemoIssues();demoProcessed.clear();demoInboxBusy=false;demoBatchBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+function setLoggedOut(){workspaceGeneration++;lastLiveMonitorCheck=0;$('n8nSnapshotSummary').textContent='';$('n8nSnapshotSummary').classList.add('hidden');note('n8nSnapshotStatus','Sign in to check the secure read-only monitoring bridge.');demoIssues.length=0;renderDemoIssues();demoProcessed.clear();demoInboxBusy=false;demoBatchBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
  const email=$('email').value.trim(),password=$('password').value;
  const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
@@ -251,6 +309,7 @@ function tab(name){
  document.querySelectorAll('.stepview').forEach(e=>e.classList.toggle('hidden',e.id!=='step-'+name));
  document.querySelectorAll('.tab').forEach(b=>{const selected=b.dataset.tab===name;b.classList.toggle('active',selected);b.setAttribute('aria-current',selected?'page':'false')});
  window.scrollTo({top:0,behavior:'smooth'});
+ if(name==='monitor')void loadN8nSnapshot();
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
 function isoAfter(days){const d=new Date(Date.now()+days*DAY);return d.toISOString().slice(0,10)}
