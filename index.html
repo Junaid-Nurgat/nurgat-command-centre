@@ -291,11 +291,12 @@ $('processAllDemo').addEventListener('click',async()=>{
   }
   if(user?.id===owner){
    const allDone=completed===remaining.length;
+   const countLabel=completed+' fictional request'+(completed===1?'':'s');
    note('demoInboxStatus',allDone
-    ? 'Batch complete: '+completed+' fictional request(s) prepared and saved. Open Saved to review; none were approved or sent.'
+    ? 'Batch complete: '+countLabel+' saved. Open Saved to review; none were approved or sent.'
     : 'Batch stopped after '+completed+' confirmed save(s). Check the current draft and save status; remaining samples can be retried.',!allDone);
    if(completed>0)note('quoteStatus',allDone
-    ? 'Batch complete: '+completed+' fictional requests saved. Current draft is unreviewed. Open Saved to see them; no customer messages or bookings.'
+    ? 'Batch complete: '+countLabel+' saved. Current draft is unreviewed. Open Saved to see them; no customer messages or bookings.'
     : 'Batch stopped after '+completed+' confirmed save(s). Review current status and retry remaining fictional examples. No customer messages or bookings.');
   }
  }finally{demoBatchBusy=false;renderDemoInbox()}
