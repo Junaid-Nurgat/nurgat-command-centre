@@ -108,6 +108,10 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <div id="workspace" class="hidden">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 15px"><div><div class="tag" style="color:#428174">NURGAT TOURS</div><h1>Flight workspace</h1><p class="sub" style="margin:0">Simple steps. Built for your phone.</p></div><button class="btn ghost" id="logout" style="font-size:12px;min-height:40px">Log out</button></div>
 <div class="demo"><strong>◉ Training mode</strong> — Fictional flights and fares only. Real GDS access, customer quotations, messaging and bookings remain disabled.</div>
+<div id="demoIssueBanner" class="demo hidden" role="status" style="margin-top:12px">
+<strong>⚠ Fictional workflow needs attention</strong> — <span id="demoIssueCount">0</span> issue(s) noticed in this browser session.
+<button type="button" class="btn ghost" id="viewDemoIssues" style="min-height:38px;margin-left:8px">View issues</button>
+</div>
 <div class="actions"><button class="btn alt" id="saveRequest" type="button">Save request / draft</button><button class="btn ghost" id="newRequest" type="button">New request</button></div><p id="saveStatus" class="status" role="status"></p>
 <nav class="bottomnav" aria-label="Lite tasks">
 <button class="tab active" data-tab="search"><span>⌕</span>Search</button>
@@ -115,6 +119,7 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <button class="tab" data-tab="quote"><span>▤</span>Quote</button>
 <button class="tab" id="tabSaved" aria-label="Saved fictional requests" data-tab="saved"><span>▣</span>Saved</button>
 <button class="tab" data-tab="ai"><span>✦</span>AI tools</button>
+<button class="tab" data-tab="monitor"><span>🛡</span>Issues</button>
 </nav>
 <section id="step-search" class="stepview">
 <div class="card" id="fictionalInbox">
@@ -156,6 +161,16 @@ details{background:#fbfdfc;border:1px solid #dde9e3;border-radius:14px;padding:1
 <form id="aiForm"><label class="field">Your question<input id="aiQuestion" maxlength="230" minlength="4" required placeholder="Which sample flight has fewer stops?"></label><button class="btn full" id="aiButton">Ask AI</button></form><p id="aiStatus" class="status" role="status"></p><div id="aiAnswer" class="quote hidden"></div></div>
 <div class="card"><h2>GDS research planner</h2><p class="sub">Build a non-executable plan from your flight search details. It cannot search or command a real provider.</p><button class="btn full alt" id="planButton">Prepare GDS plan</button><p id="planStatus" class="status" role="status"></p><div id="planAnswer" class="quote hidden"></div></div>
 </section>
+<section id="step-monitor" class="stepview hidden">
+<div class="card"><span class="step">INTERNAL DEMO · SESSION MONITOR</span>
+<h2 style="margin-top:12px">Demo workflow issues</h2>
+<p class="sub">Failures in this browser's fictional search and saving appear here automatically. No personal information, tokens or raw server errors are stored.</p>
+<p class="demo">This is <strong>not a live n8n monitoring feed</strong>. Nurgat Tours' scheduled n8n failure alerts and recovery checks run separately. This page only tracks activity while this staff tab is open.</p>
+<p id="monitorStatus" class="status" role="status">No issues noticed in this tab.</p>
+<div id="monitorIssues"></div>
+<button class="btn ghost" id="clearMonitorIssues" type="button" disabled>Clear local issue notices</button>
+<p class="small muted">Clearing notices does not fix a failed request or change saved data. Check the Search or Saved tab to retry safely.</p>
+</div></section>
 </div></main>
 <script>
 'use strict';
@@ -166,6 +181,34 @@ const DAY=86400000;
 let workspaceGeneration=0,savedBusy=false,savedOffset=0,savedRows=[],pendingSave=null;
 let searchBusy=false,quickDraftBusy=false;
 let token=null,user=null,offers=[],selected=null,quote=null,markup=0,searchContext=null;
+const demoIssues=[]; // Safe session-only notices, never raw upstream errors.
+const ISSUE_COPY=Object.freeze({
+ SEARCH:'Fictional flight search failed or was rejected. Check the Search tab and retry when ready.',
+ SAVE:'Fictional request saving was not confirmed. The draft may still be on screen. Use Save to verify or retry.'
+});
+function renderDemoIssues(){
+ const count=demoIssues.length;
+ $('demoIssueBanner').classList.toggle('hidden',count===0||!user);
+ $('demoIssueCount').textContent=String(count);
+ $('monitorStatus').textContent=count?count+' local demo issue(s) need staff attention.':'No issues noticed in this browser session. This does not indicate n8n health.';
+ $('clearMonitorIssues').disabled=count===0;
+ const list=$('monitorIssues');list.replaceChildren();
+ for(const item of demoIssues){
+  const card=document.createElement('article');card.className='offer';
+  const label=document.createElement('strong');label.textContent=item.code==='SEARCH'?'Fictional search issue':'Fictional save issue';
+  const details=document.createElement('p');details.className='small';details.textContent=ISSUE_COPY[item.code];
+  const when=document.createElement('p');when.className='small muted';when.textContent=item.time;
+  card.append(label,details,when);list.append(card);
+ }
+}
+function noteDemoIssue(code){
+ if(!user||!Object.hasOwn(ISSUE_COPY,code))return;
+ demoIssues.unshift({code,time:new Date().toLocaleString()});
+ if(demoIssues.length>15)demoIssues.length=15;
+ renderDemoIssues();
+}
+$('viewDemoIssues').addEventListener('click',()=>tab('monitor'));
+$('clearMonitorIssues').addEventListener('click',()=>{demoIssues.length=0;renderDemoIssues()});
 try{token=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
 const note=(id,msg,error=false)=>{$(id).textContent=msg;$(id).classList.toggle('error',error)};
 function store(value){token=value;try{if(value)sessionStorage.setItem('nurgat-auth-v2',JSON.stringify(value));else sessionStorage.removeItem('nurgat-auth-v2')}catch{}}
@@ -193,9 +236,9 @@ async function checkUser(){if(!token?.access_token){setLoggedOut();return}
  if(x.error||!x.data?.id){store(null);setLoggedOut();return}
  const member=await request('/rest/v1/approval_reviewers?select=user_id&active=eq.true&user_id=eq.'+encodeURIComponent(x.data.id)+'&limit=1');
  if(member.error||!Array.isArray(member.data)||member.data.length!==1){store(null);setLoggedOut();note('loginStatus','Account is not an active approved reviewer.',true);return}
- user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');renderDemoInbox();
+ user=x.data;$('login').classList.add('hidden');$('workspace').classList.remove('hidden');renderDemoInbox();renderDemoIssues();
 }
-function setLoggedOut(){workspaceGeneration++;demoProcessed.clear();demoInboxBusy=false;demoBatchBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
+function setLoggedOut(){workspaceGeneration++;demoIssues.length=0;renderDemoIssues();demoProcessed.clear();demoInboxBusy=false;demoBatchBusy=false;renderDemoInbox();savedRows=[];pendingSave=null;$('savedList').replaceChildren();note('savedStatus','');note('saveStatus','');$('aiAnswer').textContent='';$('planAnswer').textContent='';user=null;offers=[];selected=null;quote=null;searchContext=null;$('workspace').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginButton').disabled=true;note('loginStatus','Signing in…');try{
  const email=$('email').value.trim(),password=$('password').value;
  const x=await request('/auth/v1/token?grant_type=password','POST',{email,password},false);
@@ -359,7 +402,7 @@ async function searchFlights(openResults=true){
   const p=x.preference;
   options.sort((a,b)=>p==='FASTEST'?a.durationMinutes-b.durationMinutes:p==='FEWEST_STOPS'?a.stops-b.stops:p==='CHEAPEST'?a.price-b.price:(a.price/1000+a.durationMinutes/1000+a.stops*.27)-(b.price/1000+b.durationMinutes/1000+b.stops*.27));
   offers=options;searchContext=x;selected=null;quote=null;note('searchStatus','Three fictional flights found. No real GDS used.');redraw();if(openResults)tab('results');return true;
- }catch(err){if(generation!==workspaceGeneration||user?.id!==owner)return false;offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true);return false}
+ }catch(err){if(generation!==workspaceGeneration||user?.id!==owner)return false;offers=[];selected=null;quote=null;renderQuote();$('offers').replaceChildren();note('searchStatus',err.message,true);noteDemoIssue('SEARCH');return false}
  finally{searchBusy=false;$('searchButton').disabled=false;$('autoDraft').disabled=quickDraftBusy}
 }
 function quoteText(q){return [
@@ -491,6 +534,7 @@ async function saveSnapshot({automated=false}={}){
       ? 'Save could not be confirmed. It may already be saved. Your fictional work remains here. Check your connection, then click Save request / draft again to safely verify the same copy.'
       : 'Could not verify saved status. Your fictional work remains here. Check your connection or staff access, then click Save request / draft again to safely retry the same copy.';
    note('saveStatus',message,true);
+   noteDemoIssue('SAVE');
   }
   return false;
  }finally{savedBusy=false;$('saveRequest').disabled=false}
@@ -579,5 +623,6 @@ $('newRequest').addEventListener('click',()=>{
 });
 
 renderDemoInbox();
+renderDemoIssues();
 checkUser();
 </script></body></html>
