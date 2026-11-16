@@ -93,7 +93,25 @@ export function createStagingHandoff({ authorizeReviewer, serviceCredential, dis
     });
     let answer;
     try { answer = await dispatch(outgoing, secret); }
-    catch { return json({ok:false,message:'Internal staging handoff is unavailable. No booking occurred.'},502); }
+    catch (error) {
+      // The caller has already passed user authentication, reviewer authorization,
+      // and the synthetic-only request allowlist. Return a bounded internal code.
+      // Never include upstream response bodies, secret values or request headers.
+      const safeMessages = {
+        STAGING_TEST_URL_MISSING: 'The approved n8n staging test URL is not configured in Supabase.',
+        STAGING_N8N_AUTH_REJECTED: 'n8n rejected the service credential. Check the matching Header Auth values in both services.',
+        STAGING_N8N_LISTENER_NOT_READY: 'The n8n test webhook was not listening. In n8n select Listen for test event, then run the test again promptly.',
+        STAGING_N8N_HTTP_FAILURE: 'n8n returned an unsuccessful HTTP response. Check the staging workflow without sharing raw headers.',
+        STAGING_N8N_INVALID_RESPONSE: 'n8n returned a response that could not be read as the expected JSON.',
+        STAGING_N8N_TIMEOUT: 'The n8n test webhook did not respond before the 10-second limit.',
+        STAGING_N8N_NETWORK_FAILURE: 'The staging connection could not reach n8n.'
+      };
+      const code = error?.code;
+      if (typeof code === 'string' && Object.hasOwn(safeMessages, code))
+        return json({ok:false,code,message:safeMessages[code]},502);
+      return json({ok:false,code:'STAGING_N8N_UNAVAILABLE',
+        message:'Internal staging handoff is unavailable. No booking occurred.'},502);
+    }
     if (!answer || answer.ok !== true || answer.mode !== 'STAGING_INTERNAL_ONLY' ||
         answer.providerConnected !== false || answer.customerSendAllowed !== false ||
         answer.bookingAvailable !== false || answer.ticketIssuanceAllowed !== false ||
