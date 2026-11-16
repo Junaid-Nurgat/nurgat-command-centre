@@ -153,7 +153,7 @@ const safe={
   searchDelay=300;
   await page.locator('[data-demo-enquiry="DEMO-INBOX-2"]').click();
   await page.locator('#destination').fill('NBO');
-  await page.getByText('Fictional example could not be fully saved.',{exact:false}).waitFor();
+  await page.getByText('Fictional sample cancelled because trip details changed.',{exact:false}).waitFor();
   assert.equal(rows.length,3);
   assert.equal(await page.locator('#quotePreview').isVisible(),false);
   console.log('PASS 8: Editing trip mid-process rejects stale search and prevents database write');
