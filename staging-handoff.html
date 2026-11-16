@@ -23,10 +23,42 @@ const KEY='sb_publishable_X-LmUybKfqPO1oku3LVlgg_86ODj9hH'; // Public client key
 const button=document.getElementById('run'),status=document.getElementById('status'),result=document.getElementById('result');
 function update(msg,type=''){status.textContent=msg;status.className='alert'+(type?' '+type:'')}
 function futureDate(days){const d=new Date(Date.now()+days*86400000);return d.toISOString().slice(0,10)}
+async function refreshStaffSession(){
+ let saved=null;
+ try{saved=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
+ if(typeof saved?.refresh_token!=='string'||!saved.refresh_token){
+  throw Error('Staff session expired. Return to the dashboard and sign in again.');
+ }
+ let response;
+ try{
+  response=await fetch(BASE+'/auth/v1/token?grant_type=refresh_token',{
+   method:'POST',mode:'cors',cache:'no-store',
+   headers:{apikey:KEY,'content-type':'application/json'},
+   body:JSON.stringify({refresh_token:saved.refresh_token})
+  });
+ }catch{
+  throw Error('Could not refresh your staff session. Check your connection and try again.');
+ }
+ const fresh=await response.json().catch(()=>null);
+ if(!response.ok||typeof fresh?.access_token!=='string'||!fresh.access_token||
+    typeof fresh?.refresh_token!=='string'||!fresh.refresh_token){
+  if([400,401,403].includes(response.status))sessionStorage.removeItem('nurgat-auth-v2');
+  throw Error('Staff session expired. Return to the dashboard and sign in again.');
+ }
+ sessionStorage.setItem('nurgat-auth-v2',JSON.stringify(fresh));
+ return fresh.access_token;
+}
+async function sendStaging(jwt,body,signal){
+ return fetch(BASE+'/functions/v1/nurgat-service-handoff-staging',{
+  method:'POST',mode:'cors',cache:'no-store',signal,
+  headers:{apikey:KEY,authorization:'Bearer '+jwt,'content-type':'application/json'},
+  body:JSON.stringify(body)
+ });
+}
 button.addEventListener('click',async()=>{
  let session;
  try{session=JSON.parse(sessionStorage.getItem('nurgat-auth-v2')||'null')}catch{}
- const jwt=session?.access_token;
+ let jwt=session?.access_token;
  if(typeof jwt!=='string'||!jwt.trim()){update('You are not signed in in this tab. Return to the staff dashboard, sign in, then open this page in the same tab.','error');return}
  button.disabled=true;result.hidden=true;result.textContent='';
  update('Checking authenticated staging connection…');
@@ -40,11 +72,20 @@ button.addEventListener('click',async()=>{
     cabin:'ECONOMY',preference:'BEST'
    }
   };
-  const response=await fetch(BASE+'/functions/v1/nurgat-service-handoff-staging',{
-   method:'POST',mode:'cors',cache:'no-store',signal:controller.signal,
-   headers:{'apikey':KEY,'authorization':'Bearer '+jwt,'content-type':'application/json'},
-   body:JSON.stringify(body)
-  });
+  // Refresh short-lived Supabase access tokens before use. A rejected access
+  // token may also be refreshed ONCE; never replay non-authentication errors.
+  const expiry=Number(session.expires_at);
+  if(Number.isFinite(expiry)&&expiry>0&&expiry*1000<=Date.now()+60000){
+   update('Refreshing your staff session…');
+   jwt=await refreshStaffSession();
+  }
+  let response=await sendStaging(jwt,body,controller.signal);
+  if(response.status===401){
+   update('Refreshing your staff session after a login-token rejection…');
+   jwt=await refreshStaffSession();
+   response=await sendStaging(jwt,body,controller.signal);
+   if(response.status===401)throw Error('Fresh staff login token was rejected. Return to the dashboard and sign in again.');
+  }
   let data=null;try{data=await response.json()}catch{}
   if(!response.ok)throw Error(data?.message||'Test failed (HTTP '+response.status+').');
   if(data?.ok!==true||data?.mode!=='STAGING_INTERNAL_ONLY'||data?.status!=='VERIFIED_STAGING_RESPONSE'||
