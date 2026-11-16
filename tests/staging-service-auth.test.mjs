@@ -157,6 +157,39 @@ test('10: n8n outage does not disclose upstream details',async()=>{
   assert.equal(JSON.stringify(result.body).includes('account@agency'),false);
 });
 
+test('10b: n8n failure categories are safe and do not leak upstream secret details',async()=>{
+  const cases=[
+    ['STAGING_TEST_URL_MISSING',/test URL/],
+    ['STAGING_N8N_AUTH_REJECTED',/rejected the service credential/],
+    ['STAGING_N8N_LISTENER_NOT_READY',/not listening/],
+    ['STAGING_N8N_HTTP_FAILURE',/unsuccessful HTTP response/],
+    ['STAGING_N8N_INVALID_RESPONSE',/expected JSON/],
+    ['STAGING_N8N_TIMEOUT',/10-second limit/],
+    ['STAGING_N8N_NETWORK_FAILURE',/could not reach n8n/]
+  ];
+  for (const [code,pattern] of cases) {
+    const {handle}=make({dispatch:async()=>{
+      const error=new Error('NEVER_SHOW_SECRET_OR_RAW_WEBHOOK_HEADERS');
+      error.code=code;throw error;
+    }});
+    const response=await read(await handle(req()));
+    assert.equal(response.status,502);
+    assert.equal(response.body.code,code);
+    assert.match(response.body.message,pattern);
+    assert.equal(JSON.stringify(response.body).includes('NEVER_SHOW_SECRET'),false);
+  }
+});
+
+test('10c: forged unknown upstream error codes are not reflected',async()=>{
+  const {handle}=make({dispatch:async()=>{
+    const error=new Error('test');error.code='INJECTED_SECRET_FROM_UPSTREAM';throw error;
+  }});
+  const response=await read(await handle(req()));
+  assert.equal(response.status,502);
+  assert.equal(response.body.code,'STAGING_N8N_UNAVAILABLE');
+  assert.equal(JSON.stringify(response.body).includes('INJECTED_SECRET'),false);
+});
+
 test('11: unsafe n8n outputs cannot enable booking or claim provider connectivity',async()=>{
   for(const patch of [
     {bookingAvailable:true}, {customerSendAllowed:true}, {ticketIssuanceAllowed:true},
