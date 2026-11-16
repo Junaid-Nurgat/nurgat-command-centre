@@ -1,0 +1,21 @@
+name: Provider-neutral adapter tests
+on:
+  pull_request:
+    paths:
+      - api/**
+      - tests/flight-search-adapter.test.mjs
+      - .github/workflows/provider-adapter-qa.yml
+  workflow_dispatch:
+jobs:
+  adapter-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run provider adapter contract tests without credentials or network
+        run: node --test tests/flight-search-adapter.test.mjs
