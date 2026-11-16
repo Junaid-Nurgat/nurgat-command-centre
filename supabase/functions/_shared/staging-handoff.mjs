@@ -78,8 +78,14 @@ export function createStagingHandoff({ authorizeReviewer, serviceCredential, dis
     if (!fixture) return json({ok:false,message:'Only the approved fictional staging request is supported.'},400);
     const secret = serviceCredential();
     // Never silently fall back to a staff JWT, publishable key, or hard-coded demo password.
-    if (typeof secret !== 'string' || secret.length < 32)
-      return json({ok:false,message:'Staging service authentication is not configured.'},503);
+    // Safe diagnosis only after an authenticated, approved reviewer and valid
+    // fictional request: never disclose any part of the secret or its length.
+    if (typeof secret !== 'string' || secret.length === 0)
+      return json({ok:false,code:'STAGING_SECRET_MISSING',
+        message:'Supabase cannot find NURGAT_STAGING_SERVICE_KEY in this project\'s Edge Function secrets.'},503);
+    if (secret.length < 32)
+      return json({ok:false,code:'STAGING_SECRET_TOO_SHORT',
+        message:'Supabase found NURGAT_STAGING_SERVICE_KEY, but it must contain at least 32 characters.'},503);
     // Only the verified actor ID, a stable request ID and the fictional fixture travel fields
     // are sent to n8n. NEVER forward reusable staff access/refresh tokens.
     const outgoing = Object.freeze({
