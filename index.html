@@ -254,7 +254,10 @@ async function processDemoEnquiry(id){
   const generation=workspaceGeneration;
   note('demoInboxStatus','Processing built-in '+e.id+' — no real enquiry or flight provider used.');
   const saved=await runQuickDraft();
-  if(generation!==workspaceGeneration||user?.id!==owner)return;
+  if(generation!==workspaceGeneration||user?.id!==owner){
+   if(user?.id===owner)note('demoInboxStatus','Fictional sample cancelled because trip details changed. No booking or sending occurred.',true);
+   return;
+  }
   if(saved)demoProcessed.add(id);
   note('demoInboxStatus',saved
    ? 'Fictional example processed and its request snapshot saved. Draft remains unreviewed; no messages or bookings.'
