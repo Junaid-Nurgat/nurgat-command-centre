@@ -72,7 +72,7 @@ const safe={
 
   result={...safe,fresh:false};
   await page.locator('#refreshN8nSnapshot').click();
-  await page.getByText('STaLE or dated incorrectly.',{exact:false}).waitFor();
+  await page.getByText('STALE or dated incorrectly.',{exact:false}).waitFor();
   assert.equal(await page.locator('#n8nSnapshotSummary').isVisible(),true);
   console.log('PASS 4: Outdated data is explicitly stale instead of falsely reassuring');
 
