@@ -48,6 +48,12 @@ const safe={
    if(url.pathname==='/rest/v1/approval_reviewers')return reply([{user_id:STAFF}]);
    assert.equal(req.headers().authorization,'Bearer FAKE_MONITOR_ACCESS_TOKEN');
    if(url.pathname==='/auth/v1/logout')return reply({});
+   // Opening Issues now attempts a separate, read-only n8n snapshot bridge.
+   // A missing agency-side n8n key must fail closed, not break local demo issues.
+   if(url.pathname==='/functions/v1/nurgat-monitor-readonly'){
+    assert.equal(req.method(),'GET');
+    return reply({ok:false,code:'MONITOR_NOT_CONNECTED'},503);
+   }
    if(url.pathname==='/functions/v1/nurgat-flight-research-demo'){
     assert.equal(req.method(),'POST');searchRequests++;
     return reply(demoStatus===200?safe:{message:'Unsafe upstream diagnostic SHOULD NOT appear in issue monitor'},demoStatus);
